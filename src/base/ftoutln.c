@@ -274,7 +274,7 @@
       first = (FT_UInt)last + 1;
     }
 
-    FT_TRACE5(( "FT_Outline_Decompose: Done\n", n ));
+    FT_TRACE5(( "FT_Outline_Decompose: Done\n" ));
     return FT_Err_Ok;
 
   Invalid_Outline:
@@ -1058,6 +1058,11 @@
 
     /* Handle collapsed outlines to avoid undefined FT_MSB. */
     if ( cbox.xMin == cbox.xMax || cbox.yMin == cbox.yMax )
+      return FT_ORIENTATION_NONE;
+
+    /* Reject values large outlines. */
+    if ( cbox.xMin < -0x1000000L || cbox.yMin < -0x1000000L ||
+         cbox.xMax >  0x1000000L || cbox.yMax >  0x1000000L )
       return FT_ORIENTATION_NONE;
 
     xshift = FT_MSB( (FT_UInt32)( FT_ABS( cbox.xMax ) |

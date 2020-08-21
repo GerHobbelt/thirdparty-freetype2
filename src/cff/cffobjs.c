@@ -166,46 +166,56 @@
     FT_Error           error = FT_Err_Ok;
     PSH_Globals_Funcs  funcs = cff_size_get_globals_funcs( size );
 
+    FT_Memory     memory   = cffsize->face->memory;
+    CFF_Internal  internal = NULL;
+    CFF_Face      face     = (CFF_Face)cffsize->face;
+    CFF_Font      font     = (CFF_Font)face->extra.data;
 
-    if ( funcs )
-    {
-      CFF_Face      face     = (CFF_Face)cffsize->face;
-      CFF_Font      font     = (CFF_Font)face->extra.data;
-      CFF_Internal  internal = NULL;
+    PS_PrivateRec priv;
 
-      PS_PrivateRec  priv;
-      FT_Memory      memory = cffsize->face->memory;
+    FT_UInt       i;
 
-      FT_UInt  i;
+    if ( !funcs )
+      goto Exit;
 
+    if ( FT_NEW( internal ) )
+      goto Exit;
 
-      if ( FT_NEW( internal ) )
-        goto Exit;
-
-      cff_make_private_dict( &font->top_font, &priv );
-      error = funcs->create( cffsize->face->memory, &priv,
+    cff_make_private_dict( &font->top_font, &priv );
+    error = funcs->create( cffsize->face->memory, &priv,
                              &internal->topfont );
+    if ( error )
+      goto Exit;
+
+    for ( i = font->num_subfonts; i > 0; i-- )
+    {
+      CFF_SubFont  sub = font->subfonts[i - 1];
+
+
+      cff_make_private_dict( sub, &priv );
+      error = funcs->create( cffsize->face->memory, &priv,
+                               &internal->subfonts[i - 1] );
       if ( error )
         goto Exit;
-
-      for ( i = font->num_subfonts; i > 0; i-- )
-      {
-        CFF_SubFont  sub = font->subfonts[i - 1];
-
-
-        cff_make_private_dict( sub, &priv );
-        error = funcs->create( cffsize->face->memory, &priv,
-                               &internal->subfonts[i - 1] );
-        if ( error )
-          goto Exit;
-      }
-
-      cffsize->internal->module_data = internal;
     }
+
+    cffsize->internal->module_data = internal;
 
     size->strike_index = 0xFFFFFFFFUL;
 
   Exit:
+    if ( error )
+    {
+      if ( internal )
+      {
+        for ( i = font->num_subfonts; i > 0; i-- )
+          FT_FREE( internal->subfonts[i - 1] );
+        FT_FREE( internal->topfont );
+      }
+
+      FT_FREE( internal );
+    }
+
     return error;
   }
 
@@ -348,7 +358,8 @@
   FT_LOCAL_DEF( void )
   cff_slot_done( FT_GlyphSlot  slot )
   {
-    slot->internal->glyph_hints = NULL;
+    if ( slot->internal )
+      slot->internal->glyph_hints = NULL;
   }
 
 
@@ -939,7 +950,8 @@
                 style_name = cff_strcpy( memory, fullp );
 
                 /* remove the style part from the family name (if present) */
-                remove_style( cffface->family_name, style_name );
+                if ( style_name )
+                  remove_style( cffface->family_name, style_name );
               }
               break;
             }
