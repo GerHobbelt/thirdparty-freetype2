@@ -44,6 +44,46 @@
 #include <freetype/freetype.h>
 #include <freetype/internal/ftdebug.h>
 
+#ifdef FT_LOGGING
+
+  /**************************************************************************
+   *
+   * Variable used when FT_LOGGING is enabled to control logging:
+   *
+   * 1. ft_default_trace_level: stores the value of trace levels which are
+   *    provided to FreeType using FT2_DEBUG environment variable.
+   *
+   * 2. ft_fileptr: store the FILE*
+   *
+   * 3. ft_component: a string that holds the name of FT_COMPONENT
+   *
+   * 4. ft_component_flag: a flag when true, prints the name of
+   * FT_COMPONENT along with actual log message.
+   *
+   * 5. ft_timestamp_flag: a flag when true, prints time along with log
+   * actual log message.
+   *
+   * 6. ft_have_newline_char: It is used to differentiate between a log
+   *    message with '\n' char and log message without '\n' char
+   *
+   * 7. ft_custom_trace_level: stores the value of custom trace level which
+   *    is provided by user at run-time.
+   *
+   * Static Variables are defined here to remove [ -Wunused-variable ]
+   * warning
+   *
+   */
+  static const char* ft_default_trace_level = NULL;
+  static FILE* ft_fileptr = NULL;
+  static const char* ft_component = NULL;
+  static bool ft_component_flag = false;
+  static bool ft_timestamp_flag = false;
+  static bool ft_have_newline_char = true;
+  static const char* ft_custom_trace_level = NULL;
+
+  dlg_handler ft_default_log_handler = NULL;
+
+#endif
 
 #ifdef FT_DEBUG_LEVEL_ERROR
 
@@ -195,8 +235,18 @@
   FT_BASE_DEF( void )
   ft_debug_init( void )
   {
-    const char*  ft2_debug = ft_getenv( "FT2_DEBUG" );
+    const char*  ft2_debug = NULL;
 
+#ifdef FT_LOGGING
+
+if( ft_custom_trace_level != NULL )
+    ft2_debug = ft_custom_trace_level;
+else
+    ft2_debug = ft_default_trace_level;
+
+#else
+    ft2_debug = ft_getenv( "FT2_DEBUG" );
+#endif /* FT_LOGGIGN */
 
     if ( ft2_debug )
     {
@@ -209,6 +259,36 @@
         /* skip leading whitespace and separators */
         if ( *p == ' ' || *p == '\t' || *p == ',' || *p == ';' || *p == '=' )
           continue;
+
+#ifdef FT_LOGGING
+        /* check extra arguments for logging */
+        if( *p == '-' )
+        {
+          const char* r = ++p;
+          if( *r == 'v' )
+          {
+            ft_component_flag = true;
+            const char* s = ++r;
+            if( *s == 't' )
+            {
+              ft_timestamp_flag = true;
+              p++;
+            }
+            p++;
+          }
+          else if( *r == 't' )
+          {
+            ft_timestamp_flag = true;
+            const char* s = ++r;
+            if( *s == 'v' )
+            {
+              ft_component_flag = true;
+              p++;
+            }
+            p++;
+          }
+        }
+#endif /* FT_LOGGING */
 
         /* read toggle name, followed by ':' */
         q = p;
@@ -314,5 +394,108 @@
 
 #endif /* !FT_DEBUG_LEVEL_TRACE */
 
+#ifdef FT_LOGGING
+
+  /**************************************************************************
+   *
+   * If FT_LOGGING is enabled, FreeType needs to initialize all logging
+   * variables to write logs.
+   * Therefore it uses `ft_logging_init()` function to initialize a
+   * loggging variables and `ft_logging_deinit()` to un-initialize the
+   * logging variables.
+   *
+   */
+
+  FT_BASE_DEF( void )
+  ft_logging_init( void )
+  {
+    ft_default_log_handler = ft_log_handler;
+    ft_default_trace_level = ft_getenv( "FT2_DEBUG" );
+    if( ft_getenv( "FT_LOGGING_FILE" ) )
+      ft_fileptr = fopen( ft_getenv( "FT_LOGGING_FILE" ) , "w" );
+    else
+      ft_fileptr = stderr;
+
+    ft_debug_init();
+    /* We need to set the default FreeType specific dlg's output handler */
+    dlg_set_handler( ft_default_log_handler, NULL );
+
+  }
+
+  FT_BASE_DEF( void )
+  ft_logging_deinit( void )
+  {
+    fclose( ft_fileptr );
+  }
+
+  /*************************************************************************
+   *
+   * An Output log handler specific to FreeType used by dlg library.
+   *
+   */
+  FT_BASE_DEF( void )
+  ft_log_handler( const struct dlg_origin* origin,
+                              const char* string, void* data )
+  {
+    ( void ) data;
+     const char* features ;
+     if( ft_timestamp_flag && ft_component_flag && ft_have_newline_char )
+      features = "[%h:%m  %t]    %c";
+     else if( ft_component_flag && ft_have_newline_char)
+      features = "[%t]    %c";
+     else if( ft_timestamp_flag && ft_have_newline_char )
+      features = "[%h:%m]    %c";
+     else
+      features = "%c";
+
+	   dlg_generic_outputf_stream( ft_fileptr, features, origin, string,
+                                dlg_default_output_styles, true );
+
+
+     if( strchr( string, '\n' ) )
+       ft_have_newline_char = true;
+     else
+       ft_have_newline_char = false;
+
+  }
+
+/* documentation is in ftdebug.h */
+  FT_BASE_DEF( void )
+  ft_add_tag( const char* tag )
+  {
+    ft_component = tag;
+    dlg_add_tag( tag, NULL );
+  }
+
+/* documentation is in ftdebug.h */
+  FT_BASE_DEF( void )
+  ft_remove_tag( const char* tag )
+  {
+    dlg_remove_tag( tag, NULL );
+  }
+
+/* documentation is in ftlogging.h */
+
+  FT_EXPORT_DEF( void )
+  FT_Trace_Set_Level( const char* level )
+  {
+    ft_component_flag = NULL;
+    ft_timestamp_flag = NULL;
+    ft_custom_trace_level = level;
+    ft_debug_init();
+  }
+
+/* documentation is in ftlogging.h */
+
+  FT_EXPORT_DEF( void )
+  FT_Trace_Set_Default_Level( void )
+  {
+    ft_component_flag = NULL;
+    ft_timestamp_flag = NULL;
+    ft_custom_trace_level = NULL ;
+    ft_debug_init();
+  }
+
+#endif /* FT_LOGGING */
 
 /* END */
