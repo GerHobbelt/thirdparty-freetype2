@@ -38,19 +38,20 @@
    *
    */
 
-#ifdef FT_LOGGING
+#ifdef FT_DEBUG_LOGGING
 #include <../src/dlg/dlg/dlg.h>
 #include <../src/dlg/dlg/output.h>
+
 #include <freetype/ftlogging.h>
-#endif /* FT_LOGGING */
+#endif /* FT_DEBUG_LOGGING */
 
 
 FT_BEGIN_HEADER
 
-  /* force the definition of FT_DEBUG_LEVEL_TRACE if FT_LOGGING is */
-  /* already defined.                                              */
-  /*                                                               */
-#ifdef FT_LOGGING
+  /* force the definition of FT_DEBUG_LEVEL_TRACE if FT_DEBUG_LOGGING is */
+  /* already defined.                                                    */
+  /*                                                                     */
+#ifdef FT_DEBUG_LOGGING
 #undef  FT_DEBUG_LEVEL_TRACE
 #define FT_DEBUG_LEVEL_TRACE
 #endif
@@ -110,11 +111,11 @@ FT_BEGIN_HEADER
 
   /*************************************************************************
    *
-   * If FT_LOGGING is enabled, tracing messages are sent to dlg's API.
-   * If FT_LOGGING is disabled, tracing messages are sent to `FT_Message`
-   * (defined in ftdebug.c).
+   * If FT_DEBUG_LOGGING is enabled, tracing messages are sent to dlg's API.
+   * If FT_DEBUG_LOGGING is disabled, tracing messages are sent to
+   * `FT_Message` (defined in ftdebug.c).
    */
-#ifdef FT_LOGGING
+#ifdef FT_DEBUG_LOGGING
 
   /* we need two macros to convert the names of `FT_COMPONENT` to a string */
 #define FT_LOGGING_TAG( x )   FT_LOGGING_TAG_( x )
@@ -145,7 +146,7 @@ FT_BEGIN_HEADER
             ft_remove_tag( dlg_tag );                                      \
           }while( 0 )
 
-#else /* !FT_LOGGING */
+#else /* !FT_DEBUG_LOGGING */
 
 #define FT_LOG( level, varformat )                                         \
           do                                                               \
@@ -156,9 +157,7 @@ FT_BEGIN_HEADER
             }                                                              \
           } while ( 0 )
 
-#endif /* FT_LOGGING */
-
-
+#endif /* !FT_DEBUG_LOGGING */
 
 
 #ifdef FT_DEBUG_LEVEL_TRACE
@@ -276,14 +275,14 @@ FT_BEGIN_HEADER
 
 #ifdef FT_DEBUG_LEVEL_ERROR
 
-  /*************************************************************************
+  /**************************************************************************
    *
-   * If FT_LOGGING is enabled, error messages are sent to dlg's API.
-   * If FT_LOGGING is disabled, error messages are sent to `FT_Message`
+   * If FT_DEBUG_LOGGING is enabled, error messages are sent to dlg's API.
+   * If FT_DEBUG_LOGGING is disabled, error messages are sent to `FT_Message`
    * (defined in ftdebug.c).
    *
    */
-#ifdef FT_LOGGING
+#ifdef FT_DEBUG_LOGGING
 
   /*************************************************************************
    *
@@ -303,11 +302,11 @@ FT_BEGIN_HEADER
           ft_remove_tag( dlg_tag );                                         \
           } while ( 0 )
 
-#else /* !FT_LOGGING */
+#else /* !FT_DEBUG_LOGGING */
 
 #define FT_ERROR( varformat )  FT_Message varformat
 
-#endif /* !FT_LOGGING */
+#endif /* !FT_DEBUG_LOGGING */
 
 
 #else  /* !FT_DEBUG_LEVEL_ERROR */
@@ -382,7 +381,7 @@ FT_BEGIN_HEADER
   ft_debug_init( void );
 
 
-#ifdef FT_LOGGING
+#ifdef FT_DEBUG_LOGGING
 
   /**************************************************************************
    *
@@ -412,7 +411,7 @@ FT_BEGIN_HEADER
 
   /**************************************************************************
    *
-   * If FT_LOGGING macro is enabled, FreeType needs to initialize and
+   * If FT_DEBUG_LOGGING macro is enabled, FreeType needs to initialize and
    * un-initialize `FILE*`.
    *
    * These functions are defined in `ftdebug.c`.
@@ -449,7 +448,7 @@ FT_BEGIN_HEADER
   FT_Logging_Callback( const char*  fmt,
                        ... );
 
-#endif /* FT_LOGGING */
+#endif /* FT_DEBUG_LOGGING */
 
 
 FT_END_HEADER

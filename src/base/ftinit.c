@@ -202,7 +202,7 @@
     FT_Memory  memory;
 
 
-#ifdef FT_LOGGING
+#ifdef FT_DEBUG_LOGGING
     ft_logging_init();
 #endif
 
@@ -253,7 +253,7 @@
     FT_Done_Memory( memory );
 
     /* If logging is enabled we need to close the FILE* */
-#ifdef FT_LOGGING
+#ifdef FT_DEBUG_LOGGING
     ft_logging_deinit();
 #endif /* FT_LOGGING */
 

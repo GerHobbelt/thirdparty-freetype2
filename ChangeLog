@@ -1,3 +1,66 @@
+2020-12-18  Tatsuyuki Ishi  <ishitatsuyuki@gmail.com>
+
+	[autofit] Fix double division in stem darkening.
+
+	The old code used to divide the darkening amount by em_ratio twice,
+	leading to unnecessarily bold stems on certain fonts with higher
+	units per em (e.g. Inter). This patch fixes it.
+
+	The return value of af_loader_compute_darkening was also changed to
+	use 16.16 fixed point to get rid of a redundant truncation operation.
+	This should slightly improve the precision, although it's still
+	bottlenecked by the emboldening function, which uses 26.6 fixed point.
+
+	* src/autofit/afloader.[ch]
+	(af_loader_compute_darkening): Return FT_Fixed.
+	(af_loader_embolden_glyph_in_slot): Revise calculations.
+
+2020-12-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* include/freetype/ftmodapi.h (FT_FACE_DRIVER_NAME): New public macro.
+
+	The driver name is needed for `FT_Property_Set' and `FT_Property_Get'.
+
+2020-12-16  Chris Liddell  <chris.liddell@artifex.com>
+
+	[truetype] Fix incremental metrics (#59503).
+
+	* src/truetype/ttgload.c (tt_get_metrics, load_truetype_glyph):
+	Previously, the code would populate the phantom points before
+	calling the `get_glyph_metrics` callback.  For formats like PCL XL
+	format 1, class 2 downloaded fonts (where metrics are removed from
+	the TTF header), this causes problems when the hinting program uses
+	the phantom points (misplaced and distorted glyphs) due to the
+	metrics being unset (all zeros).
+	(tt_get_metrics_incr_overrides): Renamed to...
+	(tt_get_metrics_incremental): ... this.  Updated caller
+
+	* include/freetype/ftincrem.h: Update the documentation to make it
+	clearer that `get_glyph_metrics` is to retrieve metrics from a
+	non-standard source, but *not* for the purpose of imposing custom
+	metrics.
+
+2020-12-14  Werner Lemberg  <wl@gnu.org>
+
+	[type42] Pacify static analysis tools (#59682).
+
+	* src/type42/t42objs.c (T42_Size_Init, T42_GlyphSlot_Init): Avoid
+	warnings about uninitialized variables.
+
+2020-12-07  Werner Lemberg  <wl@gnu.org>
+
+	* builds/unix/configure.raw: Don't set `FT_DEBUG_LOGGING`.
+
+	All debug options are handled exclusively in `ftoption.h`.
+
+2020-12-07  Werner Lemberg  <wl@gnu.org>
+
+	* src/*: More fixes for using a '\n' in `FT_TRACE` and `FT_ERROR`.
+
+2020-12-07  Werner Lemberg  <wl@gnu.org>
+
+	*/*: s/FT_LOGGING/FT_DEBUG_LOGGING/.
+
 2020-12-05  Werner Lemberg  <wl@gnu.org>
 
 	* builds/toplevel.mk (do-dist): Remove `submodules` directory.
