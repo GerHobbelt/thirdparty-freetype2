@@ -78,6 +78,9 @@
 #pragma warning( pop )
 #endif
 
+  /* This array must stay in sync with the @FT_Pixel_Mode enumeration */
+  /* (in file `ftimage.h`).                                           */
+
   static const char* const  pixel_modes[] =
   {
     "none",
@@ -85,6 +88,7 @@
     "gray 8-bit bitmap",
     "gray 2-bit bitmap",
     "gray 4-bit bitmap",
+    "SDF 16-bit bitmap",
     "LCD 8-bit bitmap",
     "vertical LCD 8-bit bitmap",
     "BGRA 32-bit color image bitmap"
@@ -4412,8 +4416,7 @@
       render->glyph_format = clazz->glyph_format;
 
       /* allocate raster object if needed */
-      if ( clazz->glyph_format == FT_GLYPH_FORMAT_OUTLINE &&
-           clazz->raster_class->raster_new                )
+      if ( clazz->raster_class->raster_new )
       {
         error = clazz->raster_class->raster_new( memory, &render->raster );
         if ( error )
@@ -4460,8 +4463,7 @@
 
 
       /* release raster object, if any */
-      if ( render->clazz->glyph_format == FT_GLYPH_FORMAT_OUTLINE &&
-           render->raster                                         )
+      if ( render->raster )
         render->clazz->raster_class->raster_done( render->raster );
 
       /* remove from list */
@@ -4556,9 +4558,6 @@
 
     switch ( slot->format )
     {
-    case FT_GLYPH_FORMAT_BITMAP:   /* already a bitmap, don't do anything */
-      break;
-
     default:
       if ( slot->internal->load_flags & FT_LOAD_COLOR )
       {
