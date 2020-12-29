@@ -1,3 +1,270 @@
+2020-12-05  Werner Lemberg  <wl@gnu.org>
+
+	* builds/toplevel.mk (do-dist): Remove `submodules` directory.
+
+2020-12-02  Werner Lemberg  <wl@gnu.org>
+
+	* src/*: Don't use more than one '\n' in `FT_TRACE` and `FT_ERROR`.
+
+	This ensures good logging output, with all lines having a proper
+	prefix (if requested).
+
+2020-12-02  Werner Lemberg  <wl@gnu.org>
+
+	[base] Don't close 'stderr' after logging.
+
+	* src/base/ftdebug.c, builds/windows/ftdebug.c (ft_logging_deinit):
+	Fix it.
+
+2020-12-02  Werner Lemberg  <wl@gnu.org>
+
+	* submodules/dlg: Updated to commit 9f0c8b22.
+
+2020-12-02  Werner Lemberg  <wl@gnu.org>
+
+	* src/bdf/bdflib.c: Fix `-Wformat` warning.
+
+2020-12-02  Werner Lemberg  <wl@gnu.org>
+
+	Improve setup for 'dlg' library.
+
+	* autogen.sh (copy_submodule_file), builds/toplevel.mk: Redirect
+	stderr to `/dev/null`.
+
+	* builds/toplevel.mk: Move code block to handle 'dlg' stuff into
+	`check_platform` conditional.
+	Also fix wildcard expressions for guarding `git submodule` commands.
+	Also make file copying work with non-Unix platforms (untested).
+
+2020-12-01  Werner Lemberg  <wl@gnu.org>
+
+	[build] Use gcc (and clang) in C99 mode.
+
+	Other compilers are unchanged.
+
+	* builds/compiler/gcc-dev.mk, builds/compiler/gcc.mk (ANSIFLAGS):
+	s/-ansi/-std=c99/.
+
+	* builds/freetype.mk (FT_CFLAGS): Remove `-std=c99`.
+
+	* builds/unix/configure.raw: Handle C99.
+	Remove no longer needed test for gcc 4.6 and earlier.
+
+2020-12-01  Werner Lemberg  <wl@gnu.org>
+
+	[dlg] Fix compiler warnings.
+
+	* src/dlg/dlgwrap.c: Duplicate some feature test macros from
+	`dlg.c`, which must come first before loading standard headers.  For
+	example, `freetype.h` loads `stdio.h` if compiled in debug mode.
+
+2020-12-01  Werner Lemberg  <wl@gnu.org>
+
+	* src/type42/t42parse.c: Fix `-Wformat` warnings.
+
+2020-12-01  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	[builds/unix] Check for 'pthread' library.
+
+	* builds/unix/ax_pthread.m4: New file, taken from 'autoconf-archive'
+	git repository.
+
+	* builds/unix/configure.raw: Check for 'pthread'; also check whether
+	it works.
+
+2020-12-01  Werner Lemberg  <wl@gnu.org>
+
+	[base] Implement vertical alignment of log printing.
+
+	Based on a patch by Priyesh.
+
+	* include/freetype/internal/fttrace.h (FT_MAX_TRACE_LEVEL_LENGTH):
+	New macro.
+
+	* src/base/ftdebug.c, builds/windows/ftdebug.c (ft_log_handler):
+	Print logs after a fixed width to handle different lengths of
+	`FT_COMPONENT` entries.
+	Use `ft_strrchr` to check for final newline character.
+
+2020-11-30  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	Update logging related documentation.
+
+	* docs/DEBUG: Updates related to `FT_LOGGING`.
+
+	* README.git: Updates related to logging.
+
+2020-11-30  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	* src/*: Fix `-Wformat` warnings.
+
+2020-11-30  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	[builds/windows] Changes to build 'dlg' with FreeType on Windows.
+
+	We only support Visual C++ 2010 and newer.
+
+	* builds/windows/vc2010/script.bat: New windows batch file to copy
+	necessary 'dlg' files from `submodules/dlg` to `src/dlg`.  This file
+	is used as a pre-built event in Visual C++.
+
+	* builds/windows/ftdebug.c: Synchronize with `src/base/ftdebug.c`.
+
+	* builds/windows/vc2010/freetype.vcxproj.filters: Add
+	`src/dlgwrap.c`.
+
+	* builds/windows/vc2010/freetype.vcxproj
+	(AdditionalIncludeDirectories): Add include files of dlg for 'Debug'
+	and 'Debug Static' configurations on both 'x64' and 'win32'
+	platforms.
+	(PreprocessorDefinitions): Add `FT_LOGGING` for 'Debug' and 'Debug
+	Static' configurations on both 'x64' and 'win32' platforms.
+	Add `DLG_STATIC' for 'Debug' configuration on 'x64' and 'win32'
+	platforms.
+	(DisableLanguageExtensions): We need to disable the `/Za` option
+	when building 'dlg' with FreeType as 'dlg' strictly follows the C99
+	standard.  Visual C++ produces behaves unexpectedly when
+	compiling a C99 file with `/Za` option enabled.
+
+2020-11-30  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	[base] Add public API to change log handling function.
+
+	* include/freetype/ftlogging.h (FT_Custom_Log_Handler): New function
+	typedef to store the custom callback logging function.
+	(FT_Set_Log_Handler, FT_Set_Default_Log_Handler): New functions to
+	set and reset custom log handler.
+
+	* include/freetype/internal/ftdebug.h (custom_output_handler): New
+	variable to support a custom callback logging function.
+	(FT_Logging_Callback): A new function typedef to print log using
+	custom callback logging function, which is set using
+	`FT_Set_Log_Handler`.
+	(FT_Log): Use it.
+
+	* src/base/ftdebug.c (FT_Set_Log_Handler,
+	FT_Set_Default_Log_Handler, FT_Logging_Callback): Add function
+	definitions.
+
+2020-11-28  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	[base] Add public API to change the levels of tracing components.
+
+	* include/freetype/ftlogging.h: New header file.
+
+	* include/freetype/internal/ftdebug.h [FT_LOGGING]: Include
+	`ftlogging.h`.
+
+	* src/base/ftdebug.c (ft_custom_trace_level): New variable.
+	(ft_debug_init): Update to support change of levels of tracing
+	components of FreeType at run-time.
+	(FT_Trace_Set_Level): New function to change the levels of tracing
+	components at run-time.
+	(FT_Trace_Set_Default_Level): New function to reset the levels of
+	tracing components back to default.
+
+2020-11-28  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	[base] Updates to print timestamp and name of `FT_COMPONENT` in logs.
+
+	* include/freetype/internal/ftdebug.h (FT_LOGGING_TAG,
+	FT_LOGGING_TAG_): New macros to resolve the value of `FT_COMPONENT'
+	into a string.
+	(ft_add_tag, ft_remove_tag): New functions to add and remove dlg tags.
+
+	* src/base/ftdebug.c: Add new variables to control the logging of
+	timestamp and name of `FT_COMPONENT` along with actual logs.
+	(ft_add_tag, ft_remove_tag): Add function definitions.
+	(ft_log_handler): Updates to print timestamp and name of
+	`FT_COMPONENT`.
+	(ft_debug_init) [FT_LOGGING]: Users can now control the logging of
+	timestamp and name of `FT_COMPONENT` by adding tags in the
+	`FT2_DEBUG` environment variable.
+
+2020-11-27  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	[base] Add functions and variables to print logs to a file.
+
+	* include/freetype/internal/ftdebug.h: Added dlg's header files.
+	(FT_LOG): New macro to redirect trace logs to dlg's API's whenever
+	`FT_LOGGING' is defined.
+	(ft_logging_init, ft_logging_deinit): New functions to handle
+	initialization and uninitialization of logging related variables.
+	(ft_log_handler): New function to handle logs of FreeType.
+
+	* src/base/ftdebug.c: Add necessary logging related variables.
+	(ft_logging_init, ft_logging_deinit, ft_log_handler): Add function
+	definitions.
+
+	* src/base/ftinit.c (FT_Init_FreeType) [FT_LOGGING]: Call
+	`ft_logging_init`.
+	(FT_Done_FreeType) [FT_LOGGING]: Call `ft_logging_deinit`.
+
+	* src/base/ftobjs.c (FT_New_Library): Call `ft_debug_init` only if
+	`FT_LOGGING` is not defined.
+
+2020-11-27  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	[builds] Necessary changes to make 'dlg' compile.
+
+	* autogen.sh (copy_submodule_files): New script to copy all the
+	necessary source and include files from `submodules/dlg` to
+	`src/dlg`.
+
+	* src/dlg/dlgwrap.c: New wrapper file for `src/dlg.c`.  It enables
+	the build of 'dlg' if the `FT_LOGGING` macro is defined.
+
+	* src/dlg/rules.mk: New sub-Makefile.
+
+	* builds/freetype.mk (DLG_DIR): New variable to include the
+	header files of the 'dlg' library.
+	(INCLUDES): Add `DLG_DIR`.
+	(FT_CFLAGS): Add `-std=c99' flag.
+	Include `src/dlg/rules.mk` file to build 'dlg' library.
+	(OBJ_S, OBJ_M): Add `DLG_OBJS_M` and `DLG_OBJS_S`.
+
+	* builds/toplevel.mk: For builds directly from the git repository
+	we need to copy files from `submodule/dlg` to `src/dlg`.
+
+	* include/freetype/config/ftoption.h, devel/ftoption.h (FT_LOGGING):
+	New macro to enable or disable the logging facility in FreeType.
+
+2020-11-27  Priyesh Kumar  <priyeshkkumar@gmail.com>
+
+	* .gitmodules: Add 'dlg' library's git repository as submodule.
+
+2020-12-01  Werner Lemberg  <wl@gnu.org>
+
+	* src/tools/chktrcmp.py (trace_use_pat): Update to current use.
+
+2020-11-20  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[cff,cid,type1] Demote old engine for lack of CFF2.
+
+	* src/cff/cffobjs.c (cff_iriver_init): Always default to Adobe engine.
+	* src/cid/cidobjs.c (cid_driver_init): Ditto.
+	* src/type1/t1objs.c (T1_Driver_Init): Ditto.
+
+2020-11-09  Werner Lemberg  <wl@gnu.org>
+
+	* src/type42/t42parse.c (t42_parse_sfnts): More tracing messages.
+
+2020-11-04  Werner Lemberg  <wl@gnu.org>
+
+	* meson.build: Fix .pc file generation.
+
+	For backwards compatibility we need the libtool version, not the .so
+	number.
+
+	Reported by Nikolaus.
+
+2020-10-28  Werner Lemberg  <wl@gnu.org>
+
+	[truetype] Minor update to forthcoming OpenType 1.8.4 standard.
+
+	* src/truetype/ttgxvar.c (ft_var_load_item_variation_store): Limit
+	size of `regionCount`.
+
 2020-10-26  Werner Lemberg  <wl@gnu.org>
 
 	* meson.build: Fix 'harfbuzz' and 'brotli' build options (#59347).

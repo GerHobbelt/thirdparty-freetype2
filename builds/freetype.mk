@@ -152,9 +152,9 @@ endif
 #
 # `CPPFLAGS' might be specified by the user in the environment.
 #
-FT_CFLAGS  = $(CPPFLAGS) \
-             $(CFLAGS) \
-             $DFT2_BUILD_LIBRARY -std=c99
+FT_CFLAGS = $(CPPFLAGS) \
+            $(CFLAGS) \
+            $DFT2_BUILD_LIBRARY -std=c99
 
 FT_COMPILE := $(CC) $(ANSIFLAGS) $(INCLUDE_FLAGS) $(FT_CFLAGS)
 

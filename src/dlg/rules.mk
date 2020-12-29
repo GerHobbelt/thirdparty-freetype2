@@ -17,6 +17,9 @@
 #
 DLG_DIR := $(SRC_DIR)/dlg
 
+
+# compilation flags for the library
+#
 DLG_COMPILE := $(CC) $(ANSIFLAGS)                            \
                      $I$(subst /,$(COMPILER_SEP),$(DLG_DIR)) \
                      $(INCLUDE_FLAGS)                        \

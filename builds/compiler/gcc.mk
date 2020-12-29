@@ -58,14 +58,14 @@ T := -o$(space)
 #
 #   These should concern: debug output, optimization & warnings.
 #
-#   Use the ANSIFLAGS variable to define the compiler flags used to enfore
+#   Use the ANSIFLAGS variable to define the compiler flags used to enforce
 #   ANSI compliance.
 #
 CFLAGS ?= -c -g -O3 -Wall
 
 # ANSIFLAGS: Put there the flags used to make your compiler ANSI-compliant.
 #
-ANSIFLAGS := -ansi -pedantic
+ANSIFLAGS := -std=c99 -pedantic
 
 
 # Library linking

@@ -4,7 +4,7 @@
  *
  *   Additional debugging APIs.
  *
- * Copyright (C) 2008-2020 by
+ * Copyright (C) 2020 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -19,10 +19,13 @@
 #ifndef FTLOGGING_H_
 #define FTLOGGING_H_
 
+
 #include <ft2build.h>
 #include FT_CONFIG_CONFIG_H
 
+
 FT_BEGIN_HEADER
+
 
   /**************************************************************************
    *
@@ -33,11 +36,11 @@ FT_BEGIN_HEADER
    *   External Debugging APIs
    *
    * @abstract:
-   *   Pubic APIs to use while debugging using `FT_LOGGING' macro
+   *   Public APIs to control the `FT_LOGGING` macro.
    *
    * @description:
-   *   This section contains the declaration of the public  APIs which can be
-   *   used to debug an application using `FT_LOGGING'.
+   *   This section contains the declarations of public functions that
+   *   enables fine control of what the `FT_LOGGING` macro outputs.
    *
    */
 
@@ -48,24 +51,26 @@ FT_BEGIN_HEADER
    *   FT_Trace_Set_Level
    *
    * @description:
-   *   To change the levels of tracing components of FreeType, at run time.
+   *   Change the levels of tracing components of FreeType at run time.
    *
    * @input:
-   *
    *   tracing_level ::
-   *     New tracing values of FreeType's components.
+   *     New tracing value.
    *
    * @example:
-   *   This function can be used to change the levels of tracing components
-   *   of FreeType as follows:
+   *   The following call makes FreeType trace everything but the 'memory'
+   *   component.
    *
    *   ```
-   *     new_levels  = "any:7 memory:0";
-   *     FT_Trace_Set_Level( new_levels );
+   *   FT_Trace_Set_Level( "any:7 memory:0 );
    *   ```
+   *
+   * @note:
+   *   This function is only available if compilation option `@FT_LOGGING`
+   *   is set.
    */
   FT_EXPORT( void )
-  FT_Trace_Set_Level( const char* tracing_level );
+  FT_Trace_Set_Level( const char*  tracing_level );
 
 
   /**************************************************************************
@@ -74,16 +79,87 @@ FT_BEGIN_HEADER
    *   FT_Trace_Set_Default_Level
    *
    * @description:
-   *   If previously, `FT_Trace_Set_Level'  functions is used  to set new
-   *   tracing values of FreeType components, this function could be  used to
-   *   reset the tracing values of FreeType's components to the default value.
+   *   Reset tracing value of FreeType's components to the default value
+   *   (i.e., to the value of the `FT2_DEBUG` environment value or to NULL
+   *   if `FT2_DEBUG` is not set).
    *
+   *
+   * @note:
+   *   This function is only available if compilation option `@FT_LOGGING`
+   *   is set.
    */
   FT_EXPORT( void )
   FT_Trace_Set_Default_Level( void );
 
+
+  /**************************************************************************
+   *
+   * @functype:
+   *   FT_Custom_Log_Handler
+   *
+   * @description:
+   *   A function typedef that is used to handle the logging of tracing and
+   *   debug messages on a file system.
+   *
+   * @input:
+   *   ft_component ::
+   *     The name of `FT_COMPONENT` from which the current debug or error
+   *     message is produced.
+   *
+   *   fmt ::
+   *     Actual debug or tracing message.
+   *
+   *   args::
+   *     Arguments of debug or tracing messages.
+   */
+  typedef void
+  (*FT_Custom_Log_Handler)( const char*  ft_component,
+                            const char*  fmt,
+                            va_list      args );
+
+
+  /**************************************************************************
+   *
+   * @function:
+   *   FT_Set_Log_Handler
+   *
+   * @description:
+   *   A function to set a custom log handler.
+   *
+   * @input:
+   *   handler ::
+   *     New logging function.
+   *
+   * @note:
+   *   This function is only available if compilation option `@FT_LOGGING`
+   *   is set.
+   */
+  FT_EXPORT( void )
+  FT_Set_Log_Handler( FT_Custom_Log_Handler  handler );
+
+
+  /**************************************************************************
+   *
+   * @function:
+   *   FT_Set_Default_Log_Handler
+   *
+   * @description:
+   *   A function to undo the effect of @FT_Set_Log_Handler, resetting the
+   *   log handler to FreeType's built-in version.
+   *
+   * @note:
+   *   This function is only available if compilation option `@FT_LOGGING`
+   *   is set.
+   */
+  FT_EXPORT( void )
+  FT_Set_Default_Log_Handler( void );
+
   /* */
+
 
 FT_END_HEADER
 
 #endif /* FTLOGGING_H_ */
+
+
+/* END */

@@ -1956,7 +1956,7 @@
       {
         FT_TRACE3(( "    Write POST fragment #%d header (4-byte) to buffer"
                     " %p + 0x%08lx\n",
-                    i, pfb_data, pfb_lenpos ));
+                    i, (void*)pfb_data, pfb_lenpos ));
 
         if ( pfb_lenpos + 3 > pfb_len + 2 )
           goto Exit2;
@@ -1971,7 +1971,7 @@
 
         FT_TRACE3(( "    Write POST fragment #%d header (6-byte) to buffer"
                     " %p + 0x%08lx\n",
-                    i, pfb_data, pfb_pos ));
+                    i, (void*)pfb_data, pfb_pos ));
 
         if ( pfb_pos + 6 > pfb_len + 2 )
           goto Exit2;
@@ -1994,7 +1994,7 @@
 
       FT_TRACE3(( "    Load POST fragment #%d (%ld byte) to buffer"
                   " %p + 0x%08lx\n",
-                  i, rlen, pfb_data, pfb_pos ));
+                  i, rlen, (void*)pfb_data, pfb_pos ));
 
       error = FT_Stream_Read( stream, (FT_Byte *)pfb_data + pfb_pos, rlen );
       if ( error )
@@ -2681,10 +2681,10 @@
 #ifdef FT_DEBUG_LEVEL_TRACE
     if ( !error && face_index < 0 )
     {
-      FT_TRACE3(( "FT_Open_Face: The font has %ld face%s\n"
-                  "              and %ld named instance%s for face %ld\n",
+      FT_TRACE3(( "FT_Open_Face: The font has %ld face%s\n",
                   face->num_faces,
-                  face->num_faces == 1 ? "" : "s",
+                  face->num_faces == 1 ? "" : "s" ));
+      FT_TRACE3(( "              and %ld named instance%s for face %ld\n",
                   face->style_flags >> 16,
                   ( face->style_flags >> 16 ) == 1 ? "" : "s",
                   -face_index - 1 ));
@@ -5149,16 +5149,16 @@
 
     if ( cur == limit )
     {
-      FT_ERROR(( "%s: can't find module `%s'\n",
-                 func_name, module_name ));
+      FT_TRACE2(( "%s: can't find module `%s'\n",
+                  func_name, module_name ));
       return FT_THROW( Missing_Module );
     }
 
     /* check whether we have a service interface */
     if ( !cur[0]->clazz->get_interface )
     {
-      FT_ERROR(( "%s: module `%s' doesn't support properties\n",
-                 func_name, module_name ));
+      FT_TRACE2(( "%s: module `%s' doesn't support properties\n",
+                  func_name, module_name ));
       return FT_THROW( Unimplemented_Feature );
     }
 
@@ -5167,8 +5167,8 @@
                                               FT_SERVICE_ID_PROPERTIES );
     if ( !interface )
     {
-      FT_ERROR(( "%s: module `%s' doesn't support properties\n",
-                 func_name, module_name ));
+      FT_TRACE2(( "%s: module `%s' doesn't support properties\n",
+                  func_name, module_name ));
       return FT_THROW( Unimplemented_Feature );
     }
 
@@ -5181,8 +5181,8 @@
 
     if ( missing_func )
     {
-      FT_ERROR(( "%s: property service of module `%s' is broken\n",
-                 func_name, module_name ));
+      FT_TRACE2(( "%s: property service of module `%s' is broken\n",
+                  func_name, module_name ));
       return FT_THROW( Unimplemented_Feature );
     }
 
@@ -5297,7 +5297,7 @@
     /* init debugging support */
     ft_debug_init();
 #endif /* FT_DEBUG_LEVEL_ERROR */
-#endif /* FT_LOGGING */
+#endif /* !FT_LOGGING */
 
     /* first of all, allocate the library object */
     if ( FT_NEW( library ) )

@@ -129,6 +129,26 @@ ifdef check_platform
 
   include $(TOP_DIR)/builds/detect.mk
 
+  # For builds directly from the git repository we need to copy files
+  # from `submodule/dlg' to `src/dlg'.
+  #
+  ifeq ($(wildcard src/dlg/dlg.*),)
+    ifeq ($(wildcard submodules/dlg/*),)
+      $(info Checking out submodule in `submodules/dlg')
+      $(shell git submodule init)
+      $(shell git submodule update)
+    endif
+
+    $(info Copying files from `submodules/dlg' to `src/dlg')
+    $(shell mkdir $(subst /,$(SEP),src/dlg/dlg) $(NO_OUTPUT))
+    $(shell $(COPY) \
+      $(subst /,$(SEP),submodules/dlg/include/dlg/dlg.h src/dlg/dlg))
+    $(shell $(COPY) \
+      $(subst /,$(SEP),submodules/dlg/include/dlg/output.h src/dlg/dlg))
+    $(shell $(COPY) \
+      $(subst /,$(SEP),submodules/dlg/src/dlg/dlg.c src/dlg))
+  endif
+
   # This rule makes sense for Unix only to remove files created by a run of
   # the configure script which hasn't been successful (so that no
   # `config.mk' has been created).  It uses the built-in $(RM) command of
@@ -287,5 +307,8 @@ do-dist: distclean refdoc
 	@# Remove intermediate files created by the `refdoc' target.
 	rm -rf docs/markdown
 	rm -f docs/mkdocs.yml
+
+	@# Remove more stuff related to git.
+	rm -rf submodules
 
 # EOF
