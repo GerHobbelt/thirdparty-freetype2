@@ -1,3 +1,67 @@
+2021-01-10  Werner Lemberg  <wl@gnu.org>
+
+	* builds/*: s/BUILD_DIR/PLATFORM_DIR/.
+
+	The old variable name caused confusion.
+
+2021-01-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[builds] Revert `FTMODULE_H' changes.
+
+	* builds/toplevel.mk, builds/freetype.mk: Revert changes.
+
+2021-01-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[builds/windows] Fix up DLG build with VC++.
+
+	* builds/windows/vc2010/script.bat: Copy headers to include/.
+	* builds/windows/vc2010/freetype.vcxproj: Remove DLG paths.
+
+2021-01-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[builds] Relocate `FTMODULE_H'.
+
+	* builds/toplevel.mk: Place `FTMODULE_H' in include/.
+	* builds/freetype.mk: Simplify included path.
+
+2021-01-07  Werner Lemberg  <wl@gnu.org>
+
+	Fix ABI incompatibility.
+
+	* include/freetype/ftimage.h (FT_Pixel_Mode): Don't insert
+	`FT_PIXEL_MODE_GRAY16' but append it.
+
+	* src/base/ftobjs.c (pixel_modes): Updated.
+
+2021-01-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[dlg] Move the headers to include/dlg to simplify their use.
+
+	* autogen.sh, builds/toplevel.mk: Copy headers to include/dlg.
+	* builds/freetype.mk, builds/windows/vc2010/freetype.vcxproj:
+	Simplify included path.
+	* include/freetype/internal/ftdebug.h: Simplify #include.
+	* src/dlg/rules.mk, .gitignore: Updated.
+
+2021-01-06  Werner Lemberg  <wl@gnu.org>
+
+	* meson.build: Add summary.
+
+	Based on a patch from Vincent Torri <vincent.torri@gmail.com>.
+
+2021-01-06  Torsten Hilbrich  <emacs.nolkaf@hilbrich.tk>
+
+	* meson.build: Fix 'png' build option (#59458).
+
+	Without this patch, 'png' is always required.
+
+2021-01-04  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[builds/windows] Add SDF to VC2010 project.
+
+	* builds/windows/vc2010/freetype.vcxproj: Updated;
+	AfterBuild conveniences.
+
 2020-12-26  Werner Lemberg  <wl@gnu.org>
 
 	[sdf] Use 'counter-clockwise', not 'anti-clockwise'.
