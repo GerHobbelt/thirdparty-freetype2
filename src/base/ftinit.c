@@ -255,7 +255,7 @@
     /* If logging is enabled we need to close the FILE* */
 #ifdef FT_DEBUG_LOGGING
     ft_logging_deinit();
-#endif /* FT_LOGGING */
+#endif
 
     return FT_Err_Ok;
   }

@@ -124,8 +124,8 @@ FT_BEGIN_HEADER
 
   /*************************************************************************
    *
-   * If FT_LOGGING is enabled, trace messages will be sent to dlg's API and
-   * if is FT_LOGGING is disabled trace messages will be sent to
+   * If FT_DEBUG_LOGGING is enabled, trace messages will be sent to dlg's API and
+   * if is FT_DEBUG_LOGGING is disabled trace messages will be sent to
    * FT_Message(defined in ftdebug.c)
    * Therefore the following macros:
    *
@@ -136,7 +136,7 @@ FT_BEGIN_HEADER
           {                                                                \
             const char* dlg_tag =  FT_LOGGING_TAG( FT_COMPONENT );         \
             ft_add_tag( dlg_tag );                                         \
-            if( ft_trace_levels[FT_TRACE_COMP( FT_COMPONENT )] >= level )  \
+            if ( ft_trace_levels[FT_TRACE_COMP( FT_COMPONENT )] >= level ) \
             {                                                              \
               if ( custom_output_handler != NULL )                         \
                 FT_Logging_Callback varformat;                             \
@@ -144,7 +144,7 @@ FT_BEGIN_HEADER
                 dlg_trace varformat;                                       \
             }                                                              \
             ft_remove_tag( dlg_tag );                                      \
-          }while( 0 )
+          } while( 0 )
 
 #else /* !FT_DEBUG_LOGGING */
 
@@ -286,8 +286,8 @@ FT_BEGIN_HEADER
 
   /*************************************************************************
    *
-   * If FT_LOGGING is enabled, error messages will be sent to dlg's API and
-   * if is FT_LOGGING is disabled error messages will be sent to
+   * If FT_DEBUG_LOGGING is enabled, error messages will be sent to dlg's API and
+   * if is FT_DEBUG_LOGGING is disabled error messages will be sent to
    * FT_Message(defined in ftdebug.c)
    * Therefore the following macros:
    *
