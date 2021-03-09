@@ -1,3 +1,558 @@
+2021-03-08  Tim-Philipp Müller  <tim@centricular.com>
+
+	[meson] Fix 'mmap' handling on Windows.
+
+	* meson.build (ft2_sources): Always use `windows/ftsystem.c` on
+	Windows unless mmap has been disabled.
+
+	  https://gitlab.freedesktop.org/freetype/freetype/-/merge_requests/5#note_829289
+
+2021-03-07  Tim-Philipp Müller  <tim@centricular.com>
+
+	[ci] Add basic support for Meson builds with MSVC on Windows.
+
+	This adds meson jobs for VS2017 (x86 and x86_64).
+
+	* .gitlab-ci.yml: New file.
+
+2021-03-07  Tim-Philipp Müller  <tim@centricular.com>
+
+	[meson] Add subproject fallbacks for 'libpng' and 'zlib'.
+
+	* subprojects/libpng.wrap, subprojects/zlib.wrap: New files.
+
+	* meson.build: Updated.
+
+2021-03-07  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	[meson] Make it work with Windows.
+
+	* meson.build: Do not process `ftconfig.h` when not using
+	`ftconfig.h.in`.
+
+	Fixes #1029.
+
+2021-02-25  Werner Lemberg  <wl@gnu.org>
+
+	[woff2] Fix memory leak.
+
+	Reported as
+
+	  https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=28148
+
+	* src/sfnt/sfwoff2.c (woff2_open_font): Reject fonts that have
+	multiple tables with the same tag.  While not explicitly forbidden
+	in the OpenType specification, it is implicitly forbidden by
+	describing a binary search algorithm for tables that only works
+	reliably if table tags are unique.
+
+2021-02-22  Werner Lemberg  <wl@gnu.org>
+
+	* CMakeLists.txt: Update location of `LICENSE.TXT`.
+
+	Fixes #1035.
+
+2021-02-19  Werner Lemberg  <wl@gnu.org>
+
+	* builds/unix/ax_pthread.m4: Update from 'autoconf-archive'.
+
+	A bunch of fixes were added recently to its git repository.
+
+2021-02-17  Werner Lemberg  <wl@gnu.org>
+
+	[unix] Updates for autoconf 2.71.
+
+	This fixes warnings reported by autoupdate.
+
+	* builds/unix/ax_pthread.m4: Replace `as_echo` with `AS_ECHO`.
+
+	* builds/unix/configure.raw: Remove obsolete `AC_HEADER_STDC`.
+	Don't escape back quotes in messages for `AC_MSG_WARN`.
+
+2021-02-16  Werner Lemberg  <wl@gnu.org>
+
+	* builds/toplevel.mk: Fix previous commit.
+
+	<top_level>: Use `TOP_DIR` in `wildcard` function.
+	(check_out_submodule, copy_submodule): Move down to come after
+	definition of `all` rule.
+	Call `mkdir` conditionally.
+
+2021-02-16  Werner Lemberg  <wl@gnu.org>
+
+	* builds/toplevel.mk: Use rules for handling 'dlg'.
+
+	Suggested by Alexei.
+
+	(check_out_submodule, copy_submodule): New targets.
+	<top-level>: Replace calls to `shell` with rules.
+
+2021-02-16  Werner Lemberg  <wl@gnu.org>
+
+	* builds/toplevel.mk: Avoid side effects of `shell`.
+
+	We use a dummy variable to catch its output.  Otherwise the `make`
+	program is going to interpret the return value of `shell`; this can
+	cause obscure warning or error messages or even be harmful.
+
+2021-02-16  Werner Lemberg  <wl@gnu.org>
+
+	Move 'dlg' submodule to `subprojects` directory.
+
+	This is for future changes with Meson, which doesn't allow a
+	different name for its `subprojects` directory.  Having both a
+	`submodules` and a `subprojects` directory is confusing.
+
+	* .gitmodules, autogen.sh (copy_submodule_files, DLG_INC_DIR,
+	DLG_SRC_DIR): Updated.
+
+	* builds/toplevel.mk (<top-level>, do-dist),
+	builds/windows/vc2010/script.bat: Updated.
+
+	* src/tools/no-copyright: Updated.
+
+2021-02-16  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Update paint format values to support non-variable paints.
+
+	* freetype.h (FT_PaintFormat): Update paint format identifiers after
+	a specification change.  The specification was updated to have
+	sibling formats, variable and non-variable variants for each.
+	Reflect that here.
+
+	* sfnt/ttcolr.c (read_paint): Remove parsing of variable indices as
+	the non-variable formats no longer have them.
+
+2021-02-15  Daniel E  <daniel.engberg.lists@pyret.net>
+
+	* CMakeLists.txt: Improve 'bz2' support.
+
+	Not all distributions such as FreeBSD provide a `.pc` file for
+	'(lib)bz2' so follow autotools and add it to `Libs.private` instead.
+
+2021-02-13  Werner Lemberg  <wl@gnu.org>
+
+	* src/tools/update-copyright-year: Fix single-year entry handling.
+
+	The fix from 2021-01-17 didn't cover the case where the year to be
+	updated is identical to the current year.
+
+2021-02-13  Werner Lemberg  <wl@gnu.org>
+
+	Add new function `FT_Get_Transform`.
+
+	See
+
+	  https://github.com/harfbuzz/harfbuzz/issues/2428
+
+	for some reasons to introduce this function.
+
+	* include/freetype/freetype.h, src/base/ftobjs.c (FT_Get_Transform):
+	Implement it.
+
+2021-02-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Decorate `qsort` callbacks with `cdecl`.
+
+	* include/freetype/internal/compiler-macros.h (FT_COMPARE_DEF):
+	Add new macro.
+
+	* src/base/ftrfork.c, src/bdf/bdflib.c, src/gxvalid/gxvcommn.c,
+	src/psaux/afmparse.c, src/psnames/psmodule.c, src/type1/t1afm.c,
+	src/sfnt/sfwoff.c, src/sfnt/sfwoff2.c: Update `qsort` callbacks.
+
+	Fixes #1026 when compiling FreeType with an unusual calling
+	convention while the C library function `qsort` still expects
+	`cdecl`.
+
+2021-02-10  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Implement 'COLR' v1 sweep gradients.
+
+	* freetype.h (FT_PaintSweepGradient): Add `FT_PaintSweepGradient` to
+	represent a 'COLR' v1 sweep gradient.
+	Update format.
+	(FT_PaintFormat): Update shifted paint formats.
+	Sync with spec.
+	* sfnt/ttcolr.c (read_paint): Logic to parse sweep gradients.
+	Fix struct access in radial gradient implementation.
+
+2021-02-09  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Provide optional root transform for 'COLR' v1 glyph graph.
+
+        * include/freetype/freetype.h (FT_Get_Color_Glyph_Paint):
+	Additional function argument `root_transform` to control whether
+	root transform should be returned.
+	(FT_OpaquePaint): Additional tracking field to denote whether
+	root transform is to be returned.
+	* include/freetype/internal/sfnt.h
+	(TT_Get_Color_Glyph_Paint_Func): Propagate additional argument.
+	* src/base/ftobjs.c (FT_Get_Color_Glyph_Paint): Ditto.
+	* src/sfnt/ttcolr.c (tt_face_get_colr_glyph_paint): Return root
+	transform reflecting the size and tranform configured on
+	`FT_Face`.
+	(read_paint): Initialize and track status of insert_root_transform
+	flag.
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	* meson.build: s/freetype2_dep/freetype_dep/.
+
+	Many projects (e.g., fontconfig, cairo) hardcode the `freetype_dep`
+	variable name to use FreeType as subproject because that was the
+	variable name in Centricular's Meson port of FreeType.  While they
+	should stop hardcoding that variable name, it does not cost us
+	anything to keep using that name to ease transition.
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	[meson] Fix handling of HarfBuzz library.
+
+	* meson.build (harfbuzz_dep): Do not fall back to HarfBuzz by
+	default.
+
+	Otherwise it causes a dependency cycle:
+
+	  cairo => fontconfig => freetype2 => harfbuzz => cairo
+
+	Meson will still fall back to HarfBuzz subprojects if the `harfbuzz`
+	option is set to `enabled` instead of `auto` and a
+	`subprojects/harfbuzz.wrap` file is present.  In that case it is the
+	responsibility of the main project to set the proper options on each
+	subproject to break the dependency cycle.
+
+	Fixes: #1028.
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	[meson] Fix dependency lookup and generate `ftconfig.h`.
+
+	- zlib: If not found on the system, meson can build it as a
+	  subproject.  We thus never use the (outdated) zlib support that
+	  comes with FreeType.  Doing so has the additional advantage that
+	  the zlib code can be shared with other projects like GLib if both
+	  are subprojects of an application.
+	- harfbuzz: Build as a subproject if not found on the system.
+	- 'QUESTION: What if the compiler doesn't support `-D` but uses `/D`
+	  instead as on Windows?'  Answer: Meson translate arguments for us.
+	- visibility: Replace self-made code with meson-specific solution.
+
+	* meson.build (ft2_defines): Rewrite logic to set and handle it.
+	(process_header_command): New variable, previously called
+	`ftoption_command`.
+	(ftoption_command, ftconfig_command): New variables.
+	(zlib_option): Removed.
+	(zlib_dep): New variable.
+	(ft2_deps): Updated.
+	(harfbuzz_dep): Updated.
+	(ftconfig_h_in, ftconfig_h): New variables.
+	(ft2_sources): Updated.
+	(ft2_lib): Updated, handle visibility.
+	(summary): Updted.
+
+	* meson_options.txt (zlib): Updated.
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	* meson.build: Fix resource compilation on Windows.
+
+	This is copied from GStreamer's meson port of FreeType.
+
+	(ft2_sources): Add both debug and resource file (the latter for
+	Windows only).
+	(ft2_debug_src): Removed.
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	* meson.build: s/ft2_libtool_version/ft2_pkgconfig_version/.
+
+	(freetype2_dep): Use it.
+
+	`ft2_libtool_version` would be the shared library version, not the
+	one we should use in file `freetype2.pc`.
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	* meson.build: Use `meson.override_dependency`.
+
+	This is a new meson mechanism to avoid other projects to hard-code
+	the `freetype2_dep` variable name in their build definition.  It
+	also ensures that meson does not mix system and subproject versions
+	of FreeType inside of the same project.
+
+	Also remove outdated TODO because `declare_dependency` was already
+	there.
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	* meson.build (bzip2_dep): Simplify.
+
+	We remove `static:false` from `find_library('bz2')`.
+
+	I don't know whether the previous code was a workaround for an old
+	meson bug, but at least with version >=0.55.0 (which FreeType uses)
+	it picks the shared library when both are available.
+
+	File `freetype2.pc` still contains the full path to file `libbz2.so`
+	instead of `-lbz2` – that we need to do this is a meson bug even
+	present in the current version (0.57.0).
+
+2021-02-09  Xavier Claessens  <xavier.claessens@collabora.com>
+
+	* meson.build: Set project version.
+
+2021-02-04  Werner Lemberg  <wl@gnu.org>
+
+	[base] Fix Netpbm tracing message.
+
+	* src/base/ftobjs.c (FT_Render_Glyph_Internal): Don't emit Netpbm
+	warning if there is nothing to output.
+
+2021-02-04  Werner Lemberg  <wl@gnu.org>
+
+	* src/*: Don't use more than one '\n' in `FT_TRACE` and `FT_ERROR`.
+
+	This ensures good logging output, with all lines having a proper
+	prefix (if requested).
+
+	This is a continuation of a similar patch from 2020-12-02, which
+	missed some locations.
+
+2021-02-03  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* builds/unix/configure.raw [mmap]: Restore default path.
+
+	Fixes #1023.
+
+2021-02-03  Werner Lemberg  <wl@gnu.org>
+
+	[psaux] Fix integer overflow.
+
+	Reported as
+
+	  https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=30154
+
+	* src/psaux/psblues.c (cf2_blues_capture): Use `SUB_INT32`.
+
+2021-02-02  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* builds/unix/configure.raw [mmap support]: Explicitly handle Windows.
+
+	Fixes #1024.
+
+2021-01-31  Werner Lemberg  <wl@gnu.org>
+
+	* builds/unix/configure.raw [mmap support]: Correctly handle Windows.
+
+	Fixes #1024.
+
+2021-01-31  Werner Lemberg  <wl@gnu.org>
+
+	* builds/windows/ftdebug.c: Synchronize with `src/base/ftdebug.c`.
+
+2021-01-31  Werner Lemberg  <wl@gnu.org>
+
+	Always provide logging API.
+
+	It's easier to have stubs if FT_DEBUG_LOGGING is undefined than to
+	modify `ftexport.sym` conditionally.
+
+	Problem reported by Alexei.
+
+	* src/base/ftdebug.c: Include `ftlogging.h`.
+	(FT_Trace_Set_Level, FT_Trace_Set_Default_Level, FT_Set_Log_Handler,
+	FT_Set_Default_Log_Handler) [!FT_DEBUG_LOGGING]: Provide stubs.
+
+2021-01-31  Werner Lemberg  <wl@gnu.org>
+
+	* builds/unix/configure.raw: Fix typo.
+
+	Bug introduced in Vincent's last commit bb33f03.
+
+	Fixes issue #1021.
+
+2021-01-27  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/base/ftstroke.c (FT_Stroker_EndSubPath): Ignore tiny gaps.
+
+	Fixes bug #1020.
+
+2021-01-27  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[stroker] Minor clean-up.
+
+	* src/base/ftstroke.c (FT_Stroker_{ConicTo,CubicTo}): Reset the last
+	line length.
+	(FT_Stroker_EndSubPath): Call `ft_stroker_process_corner'.
+
+2021-01-27  Vincent Torri  <vincent.torri@gmail.com>
+
+	* builds/windows/ftsystem.c: Add shared memory support on Windows.
+
+	* CMakeLists.txt (BASE_SRCS), builds/unix/configure.raw (FTSYS_SRC),
+	builds/windows/vc2010/freetype.vcxproj,
+	builds/windows/visualc/freetype.vcproj, meson.build (ft2_sources):
+	Add it (conditionally).
+
+2021-01-23  Werner Lemberg  <wl@gnu.org>
+
+	Require HarfBuzz 2.0.0.
+
+	This is needed to make commit f1f9705f9 work.
+
+	* CMakeLists.txt (HARFBUZZ_MIN_VERSION), builds/unix/configure.raw
+	(harfbuzz_pkg), meson.build (harfbuzz_dep): Updated.
+
+2021-01-22  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* autogen.sh: Absorb `version.sed'.
+	* version.sed: Removed.
+
+2021-01-19  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* srd/base/ftlcdfil.c (FT_Library_SetLcdGeometry): Fix return value.
+
+2021-01-15  Nikolaus Waxweiler  <madigens@gmail.com>
+
+	[afshaper] Fix hb_ot_tags_from_script deprecation warning.
+
+	* autofit/afshaper.c (af_shaper_get_coverage): Copy the source code
+	of the function as suggested in
+	https://github.com/harfbuzz/harfbuzz/issues/2737 and adjust to handle
+	at most three tags.
+
+2021-01-17  Werner Lemberg  <wl@gnu.org>
+
+	* src/tools/update-copyright-year: Fix single-year entry handling.
+
+2021-01-16  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* builds/unix/unixddef.mk: Remove the second DEVEL_DIR definition.
+
+2021-01-14  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Additional checks for 'colr' table presence.
+
+	* sfnt/ttcolr.c (tt_face_get_colr_glyph_paint,
+	tt_face_get_colorline_stops, tt_face_get_paint): Additional checks
+	for whether colr table is present.  Prevents crashes when these
+	methods are called on non-COLR fonts.
+
+2021-01-13  Dominik Röttsches  <drott@chromium.org>
+
+	Add config option to test for 'COLR' v1 support in headers.
+
+	* include/freetype/config/ftoption.h (TT_SUPPORT_COLRV1): New macro
+	so that clients can test whether the FreeType checkout that they are
+	building against supports the 'COLR' v1 API.  This is intended to be
+	a temporary solution until 'COLR' v1 support is released in a
+	FreeType version and such a check can be made by using the version
+	number instead.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	[base] Fill 'COLR' v1 API templates to make them work (#59703).
+
+	* src/base/ftobjs.c (FT_Get_Color_Glyph_Paint, FT_Get_Paint_Layers,
+	FT_Get_Paint, FT_Get_Colorline_Stops): Add basic sanity checks,
+	check for existence of `FT_Face`, check arguments and delegate calls
+	for the respective 'COLR' v1 API to the SFNT driver.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Register 'COLR' v1 API in driver (#59703).
+
+	* include/freetype/internal/sfnt.h (TT_Get_Color_Glyph_Paint_Func,
+	TT_Get_Paint_Layers_Func, TT_Get_Colorline_Stops_Func,
+	TT_Get_Paint_Func): New function pointer types.
+	(SFNT_Interface): Add them.
+	(FT_DEFINE_SFNT_INTERFACE): Updated.
+
+	* src/sfnt/sfdriver.c (PUT_COLOR_LAYERS_V1): New macro.
+	(sfnt_interface): Add new function pointers.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Add 'COLR' v1 API to retrieve color layers (#59703).
+
+	* src/sfnt/ttcolr.c (tt_face_get_paint_layers): New function to get
+	the layers of a `PaintColrLayers` table in the font, using an
+	`FT_LayerIterator` from an `FT_PaintColrLayers` object retrieved via
+	`tt_face_get_paint`.
+
+	* src/sfnt/ttcolr.h: Updated.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Add 'COLR' v1 API to iterate color stops (#59703).
+
+	* src/sfnt/ttcolr.c (tt_face_get_colorline_stops): New function to
+	return the current `FT_ColorStop` object from `FT_ColorStopIterator`.
+	Also increment the iterator.
+
+	* src/sfnt/ttcolr.h: Updated.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Add API to get actual paint from `FT_OpaquePaint` (#59703).
+
+	* src/sfnt/ttcolr.c (tt_face_get_paint): New function to resolve an
+	`FT_OpaquePaint` paint reference into an `FT_COLR_Paint` object of a
+	certain format, which contains the detailed information stored in a
+	paint of the respective format.
+	(read_paint): New function to provide the format specific parsing
+	and to populate the data members of each specific `FT_COLR_Paint`
+	subtype.
+	(read_color_line): New function to parse retrieved color line
+	information into an `FT_ColorLine` object, which has information
+	about the color line extend mode as well as an
+	`FT_ColorStopIterator` object.
+
+	* src/sfnt/ttcolr.h: Updated.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	[sfnt] Add API to retrieve 'COLR' v1 root paint (#59703).
+
+	* src/sfnt/ttcolr.c (BaseGlyphV1Record): New structure.
+	(tt_face_load_colr): Handle version 1 table header.
+	(find_base_glyph_v1_record): New auxiliary function.
+	(tt_face_get_colr_glyph_paint): New function to find the root
+	`FT_OpaquePaint` object for a given glyph ID.
+
+	* src/sfnt/ttcolr.h: Updated.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	Add new methods required for 'COLR' v1 to public API (#59703).
+
+	* include/freetype/freetype.h (FT_Get_Color_Glyph_Paint): New method
+	for retrieving the root paint object for a color glyph by specifying
+	a glyph ID.
+	(FT_Get_Paint_Layers): New method for retrieving the layers of a
+	`PaintColorGlyph`.
+	(FT_Get_ColorLine_Stops): New method for retrieving the stops of a
+	color.
+	(FT_Get_Paint): New method for resolving an `FT_OpaquePaint` into an
+	`FT_COLR_Paint` object.
+
+2020-12-16  Dominik Röttsches  <drott@chromium.org>
+
+	Add types required for 'COLR' v1 to public API (#59703).
+
+	* include/freetype/freetype.h (FT_PaintFormat, FT_ColorStopIterator,
+	FT_ColorIndex, FT_ColorStop, FT_PaintExtend, FT_ColorLine,
+	FT_Affine23, FT_CompositeMode, FT_OpaquePaint, FT_PaintColrLayers,
+	FT_PaintSolid, FT_PaintLinearGradient, FT_PaintRadialGradient,
+	FT_PaintGlyph, FT_PaintColrGlyph, FT_PaintTransformed,
+	FT_PaintTranslate, FT_PaintRotate, FT_PaintSkew, FT_PaintComposite,
+	FT_COLR_Paint): Adding structs and enum to represent paint format,
+	color stop information, gradient extend information, structs to
+	reference paint offsets, and to define transforms and compositions.
+	Adding a union type to represent the union of the structs,
+	distinguished by `FT_PaintFormat`.
+
 2021-01-10  Werner Lemberg  <wl@gnu.org>
 
 	* builds/*: s/BUILD_DIR/PLATFORM_DIR/.
@@ -725,7 +1280,7 @@
 
 	[cff,cid,type1] Demote old engine for lack of CFF2.
 
-	* src/cff/cffobjs.c (cff_iriver_init): Always default to Adobe engine.
+	* src/cff/cffobjs.c (cff_driver_init): Always default to Adobe engine.
 	* src/cid/cidobjs.c (cid_driver_init): Ditto.
 	* src/type1/t1objs.c (T1_Driver_Init): Ditto.
 
@@ -5816,7 +6371,7 @@
 
 ----------------------------------------------------------------------------
 
-Copyright (C) 2018-2020 by
+Copyright (C) 2018-2021 by
 David Turner, Robert Wilhelm, and Werner Lemberg.
 
 This file is part of the FreeType project, and may only be used, modified,

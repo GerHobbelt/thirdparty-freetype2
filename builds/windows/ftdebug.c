@@ -4,7 +4,7 @@
  *
  *   Debugging and logging component for Win32 (body).
  *
- * Copyright (C) 1996-2020 by
+ * Copyright (C) 1996-2021 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -42,6 +42,7 @@
 
 
 #include <freetype/freetype.h>
+#include <freetype/ftlogging.h>
 #include <freetype/internal/ftdebug.h>
 #include <freetype/internal/ftobjs.h>
 
@@ -602,7 +603,7 @@
   /* documentation is in ftlogging.h */
 
   FT_EXPORT_DEF( void )
-  FT_Set_Default_Log_Handler()
+  FT_Set_Default_Log_Handler( void )
   {
     custom_output_handler = NULL;
   }
@@ -621,7 +622,36 @@
     va_end( ap );
   }
 
-#endif /* FT_DEBUG_LOGGING */
+#else /* !FT_DEBUG_LOGGING */
+
+  FT_EXPORT_DEF( void )
+  FT_Trace_Set_Level( const char*  level )
+  {
+    FT_UNUSED( level );
+  }
+
+
+  FT_EXPORT_DEF( void )
+  FT_Trace_Set_Default_Level( void )
+  {
+    /* nothing */
+  }
+
+
+  FT_EXPORT_DEF( void )
+  FT_Set_Log_Handler( FT_Custom_Log_Handler  handler )
+  {
+    FT_UNUSED( handler );
+  }
+
+
+  FT_EXPORT_DEF( void )
+  FT_Set_Default_Log_Handler( void )
+  {
+    /* nothing */
+  }
+
+#endif /* !FT_DEBUG_LOGGING */
 
 
 /* END */

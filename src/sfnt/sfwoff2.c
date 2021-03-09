@@ -4,7 +4,7 @@
  *
  *   WOFF2 format management (base).
  *
- * Copyright (C) 2019-2020 by
+ * Copyright (C) 2019-2021 by
  * Nikhil Ramakrishnan, David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -101,7 +101,7 @@
   }
 
 
-  FT_CALLBACK_DEF( int )
+  FT_COMPARE_DEF( int )
   compare_tags( const void*  a,
                 const void*  b )
   {
@@ -2207,6 +2207,25 @@
               woff2.num_tables,
               sizeof ( WOFF2_Table ),
               compare_tags );
+
+    /* reject fonts that have multiple tables with the same tag */
+    for ( nn = 1; nn < woff2.num_tables; nn++ )
+    {
+      FT_ULong  tag = indices[nn]->Tag;
+
+
+      if ( tag == indices[nn - 1]->Tag )
+      {
+        FT_ERROR(( "woff2_open_font:"
+                   " multiple tables with tag `%c%c%c%c'.\n",
+                   (FT_Char)( tag >> 24 ),
+                   (FT_Char)( tag >> 16 ),
+                   (FT_Char)( tag >> 8  ),
+                   (FT_Char)( tag       ) ));
+        error = FT_THROW( Invalid_Table );
+        goto Exit;
+      }
+    }
 
     if ( woff2.uncompressed_size < 1 )
     {

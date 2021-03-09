@@ -3,7 +3,7 @@
 #
 
 
-# Copyright (C) 1996-2020 by
+# Copyright (C) 1996-2021 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -130,23 +130,14 @@ ifdef check_platform
   include $(TOP_DIR)/builds/detect.mk
 
   # For builds directly from the git repository we need to copy files
-  # from `submodule/dlg' to `src/dlg' and `include/dlg'.
+  # from `subprojects/dlg' to `src/dlg' and `include/dlg'.
   #
-  ifeq ($(wildcard src/dlg/dlg.*),)
-    ifeq ($(wildcard submodules/dlg/*),)
-      $(info Checking out submodule in `submodules/dlg')
-      $(shell git submodule init)
-      $(shell git submodule update)
+  ifeq ($(wildcard $(TOP_DIR)/src/dlg/dlg.*),)
+    ifeq ($(wildcard $(TOP_DIR)/subprojects/dlg/*),)
+      copy_submodule: check_out_submodule
     endif
 
-    $(info Copying files from `submodules/dlg' to `src/dlg' and `include/dlg')
-    $(shell mkdir $(subst /,$(SEP),include/dlg) $(NO_OUTPUT))
-    $(shell $(COPY) \
-      $(subst /,$(SEP),submodules/dlg/include/dlg/output.h include/dlg))
-    $(shell $(COPY) \
-      $(subst /,$(SEP),submodules/dlg/include/dlg/dlg.h include/dlg))
-    $(shell $(COPY) \
-      $(subst /,$(SEP),submodules/dlg/src/dlg/dlg.c src/dlg))
+    setup: copy_submodule
   endif
 
   # This rule makes sense for Unix only to remove files created by a run of
@@ -189,6 +180,23 @@ else
   include $(CONFIG_MK)
 
 endif # test check_platform
+
+
+.PHONY: check_out_submodule copy_submodule
+
+check_out_submodule:
+	$(info Checking out submodule in `subprojects/dlg')
+	git submodule init
+	git submodule update
+
+copy_submodule:
+	$(info Copying files from `subprojects/dlg' to `src/dlg' and `include/dlg')
+  ifeq ($(wildcard include/dlg),)
+	mkdir $(subst /,$(SEP),include/dlg)
+  endif
+	$(COPY) $(subst /,$(SEP),subprojects/dlg/include/dlg/output.h include/dlg)
+	$(COPY) $(subst /,$(SEP),subprojects/dlg/include/dlg/dlg.h include/dlg)
+	$(COPY) $(subst /,$(SEP),subprojects/dlg/src/dlg/dlg.c src/dlg)
 
 
 # We always need the list of modules in ftmodule.h.
@@ -309,6 +317,6 @@ do-dist: distclean refdoc
 	rm -f docs/mkdocs.yml
 
 	@# Remove more stuff related to git.
-	rm -rf submodules
+	rm -rf subprojects
 
 # EOF
