@@ -1,4 +1,32 @@
-2021-04-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+2021-05-04  Ben Wagner  <bungeman@chromium.org>
+
+	* src/cid/cidload.c (cid_hex_to_binary): Improve return value.
+
+	Add argument to return the actual number of bytes that were decoded.
+	The actual number of bytes decoded can be quite variable depending
+	on the number of ignored 'whitespace' bytes or early termination
+	with `>`.
+	(cid_face_open): Updated to use this calculated value.  This avoids
+	trusting `parser->binary_length` is always be correct and reading
+	uninitialized bits if fewer are actually decoded.
+
+	First reported as
+
+	  https://crbug.com/1203240
+
+2021-05-03  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[sfnt] Streamline POST format 2.0 handing.
+
+	To reduce memory allocations, we read an entire Pascal-string buffer
+	and convert it to a C-string buffer.  We also reject tables with
+	Postscript glyph names exceeding 63 bytes.
+
+	* src/sfnt/ttpost.c (load_format20): Implement it.
+	(load_post_names): Check the minimal POST table size.
+	(load_format25, tt_face_free_ps_names): Updated accordingly.
+
+2021-05-02  Alexei Podtelezhnikov  <apodtele@gmail.com>
 
 	[bdf,pcf] Avoid memory zeroing (contd.).
 
@@ -31,7 +59,7 @@
 	[truetype] Avoid some memory zeroing.
 
 	* src/truetype/ttinterp.c (Init_Context): Tweak allocation macro.
-	* src/truetype/ttpload.c (tt_face_load_cvt): Ditto. 
+	* src/truetype/ttpload.c (tt_face_load_cvt): Ditto.
 
 2021-05-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
 
