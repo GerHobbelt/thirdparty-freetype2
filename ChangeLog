@@ -1,3 +1,48 @@
+2021-04-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[bdf,pcf] Avoid memory zeroing (contd.).
+
+	* src/bdf/bdflib.c (bdf_create_property, _bdf_add_comment,
+	_bdf_add_property, bdf_load_font): Tweak allocation macros.
+	* src/pcf/pcfread.c (pcf_get_properties, pcf_get_metrics): Ditto.
+
+2021-05-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/cid/cidload.c (cid_read_subrs): Tweak allocaton macro.
+
+2021-05-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[sfnt] Avoid some memory zeroing.
+
+	* src/sfnt/sfobjs.c (sfnt_open_font, sfnt_init_face,
+	tt_name_ascii_from_{utf16,other}): Tweak allocaton macros.
+	* src/sfnt/ttload.c (tt_face_load_name): Ditto.
+
+2021-05-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/sfnt/ttpost.c (load_format_{20,25}): Tweak allocaton macros.
+
+2021-05-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/sfnt/pngshim.c (Load_SBit_Png): Tweak allocaton macro.
+
+2021-05-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[truetype] Avoid some memory zeroing.
+
+	* src/truetype/ttinterp.c (Init_Context): Tweak allocation macro.
+	* src/truetype/ttpload.c (tt_face_load_cvt): Ditto. 
+
+2021-05-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[woff2] Avoid some memory zeroing.
+
+	* src/sfnt/sfwoff2.c (store_loca, woff2_open_font): Tweak macros.
+
+2021-04-30  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/gzip/ftgzip.c (ft_gzip_alloc): Zero out memory again.
+
 2021-04-27  Alexei Podtelezhnikov  <apodtele@gmail.com>
 
 	[lzw] Preserve decompression stack when relocating to heap.

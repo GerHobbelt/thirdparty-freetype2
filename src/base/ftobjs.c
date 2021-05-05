@@ -3769,11 +3769,9 @@
   {
     FT_UInt  result = 0;
 
-
     if ( face && face->charmap )
     {
       FT_CMap  cmap = FT_CMAP( face->charmap );
-
 
       if ( charcode > 0xFFFFFFFFUL )
       {
@@ -3798,7 +3796,6 @@
   {
     FT_ULong  result = 0;
     FT_UInt   gindex = 0;
-
 
     /* only do something if we have a charmap, and we have glyphs at all */
     if ( face && face->charmap && face->num_glyphs )
@@ -3830,7 +3827,6 @@
     {
       FT_UInt32  code = (FT_UInt32)charcode;
       FT_CMap    cmap = FT_CMAP( face->charmap );
-
 
       do
       {
