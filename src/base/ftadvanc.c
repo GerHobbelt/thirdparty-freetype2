@@ -93,7 +93,6 @@
     {
       FT_Error  error;
 
-
       error = func( face, gindex, 1, flags, padvance );
       if ( !error )
         return _ft_face_scale_advances( face, padvance, 1, flags );
