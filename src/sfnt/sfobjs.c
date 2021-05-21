@@ -1150,9 +1150,10 @@
         }
 
         /* synthesize Unicode charmap if one is missing */
-        if ( !has_unicode )
+        if ( !has_unicode                                &&
+             root->face_flags & FT_FACE_FLAG_GLYPH_NAMES )
         {
-          FT_CharMapRec cmaprec;
+          FT_CharMapRec  cmaprec;
 
 
           cmaprec.face        = root;
@@ -1237,7 +1238,7 @@
           }
 
           /* reduce array size to the actually used elements */
-          (void)FT_RENEW_ARRAY( sbit_strike_map, count, bsize_idx );
+          (void)FT_QRENEW_ARRAY( sbit_strike_map, count, bsize_idx );
 
           /* from now on, all strike indices are mapped */
           /* using `sbit_strike_map'                    */

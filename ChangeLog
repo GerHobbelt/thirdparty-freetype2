@@ -1,3 +1,142 @@
+2021-05-19  Nikolaus Waxweiler  <madigens@gmail.com>
+
+	[CMake] Update dependency finders.
+
+	1. Fixes CMake using any found HarfBuzz version lower than the minimum
+	required. This is based on HALX99's merge request at
+	https://gitlab.freedesktop.org/freetype/freetype/-/merge_requests/31
+	2. Update FindHarfBuzz.cmake from
+	https://github.com/WebKit/WebKit/blob/1ce32454/Source/cmake/FindHarfBuzz.cmake
+	and guard post-CMake-3.1 features to keep the minimum version unchanged
+	3. Update FindBrotliDec.cmake to stop the warnings, based on what
+	https://github.com/google/woff2/blob/a0d0ed7d/cmake/FindBrotliDec.cmake
+	is doing
+
+	* CMakeLists.txt, builds/cmake/FindHarfBuzz.cmake: Implement 1 and 2.
+	* builds/cmake/FindBrotliDec.cmake: Implement 3.
+
+2021-05-19  Ben Wagner  <bungeman@chromium.org>
+
+	[gzip] Use exact type for `ft_gzip_alloc` and `ft_gzip_free`.
+
+	While a function pointer may be cast to another function pointer
+	type, it is required to cast the function pointer back to the
+	original function pointer type before calling it.  If a parameter is
+	a pointer the exact pointer type is required.  Using a pointer to a
+	different underlying type is technically undefined behavior.  The
+	wrapper functions `ft_gzip_alloc` and `ft_gzip_free` took
+	`FT_Memory` (a `FT_MemoryRec_*`) instead of `voidpf` (`void*`), so
+	when gzip calls these callbacks through `alloc_func` or `free_func`
+	it invokes undefined behavior.  On most platforms this works out as
+	expected, but newer undefined behavior detectors and targets like
+	wasm can detect this and will produce an error.
+
+	* src/gzip/ftgzip.c (ft_gzip_alloc, ft_gzip_free): Update signatures
+	to exactly match `alloc_func` and `free_func`, respectively.
+	Internally, cast the `void*` opaque pointer to `FT_Memory`.
+
+2021-05-18  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Prioritize the anti-aliasing renderer module.
+
+	* modules.cfg: Reorder the renderers.
+	* include/freetype/config/ftmodule.h: Ditto.
+
+2021-05-16  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[sfnt] Additional guards on the POST table.
+
+	Fixes timeout (#1055) analyzed by Ben Wagner, reported as
+
+	  https://crbug.com/1194092
+
+	* src/sfnt/ttload.c (tt_face_load_post): Check POST format.
+	* src/sfnt/sfobjs.c (sfnt_load_face): Synthesize the missing unicode
+	charmap only if the glyph names exist.
+	* src/psnames/psmodule.c (ps_unicode_value): Short cut ".notdef" and
+	".null".
+
+2021-05-13  Daniel McArdle  <dmcardle@chromium.org>
+
+	[psaux] Use doubling allocation strategy for CF2_ArrStack.
+
+	Fixes timeout reported as
+
+	  https://crbug.com/1206181
+
+	* src/psaux/psarrst.c (cf2_arrstack_{push,init}): Implement it.
+	* src/psaux/psarrst.h (CF2_ArrStackiRec): Drop `chunk'.
+
+2021-05-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/smooth/ftgrays.c (FT_MAX_GRAY_SPANS): Increase from 10 to 16.
+
+	Ten was barely enough for two slanted stems. Sixteen can actually fit
+	a bit more complicated scanlines.
+
+2021-05-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/smooth/ftgrays.c (FT_GRAY_SET): Adjust for better code.
+
+2021-05-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[smooth] Faster bitmap sweeping.
+
+	Selecting the fill rule or checking the direct mode each time we call
+	`gray_hline' is sub-optimal.  This effectively splits the direct mode
+	into a separate code path while inlining `gray_hline' and saving 5-7%
+	of rendering time.
+
+	* src/smooth/ftgrays.c (gray_hline): Eliminated in favor of...
+	(FT_FILL_RULE, FT_GRAY_SET): ... these new macros...
+	(gray_sweep): ... inlined here.
+	(gray_sweep_direct): New function that handles the direct span buffer.
+	(gray_TWorker): Remove the span buffer.
+	(gray_raster_render, gray_convert_glyph): Updated.
+
+2021-05-10  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/smooth/ftgrays.c (gray_hline): Simplify even-odd computations.
+
+	It is too bad the even-odd rule is not used much.
+
+2021-05-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[type1] Avoid MM memory zeroing.
+
+	* src/type1/t1load.c (t1_allocate_blend, parse_blend_design_map):
+	Tweak allocation macros.
+	* src/type1/t1objs.c (T1_Face_Done): Minor.
+
+2021-05-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/bdf/bdflib.c (_bdf_list_ensure): Tweak allocation macro.
+
+2021-05-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/psaux/psobjs.c (ps_parser_load_field): Tweak allocation macro.
+
+2021-05-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/sfnt/sfobjs.c (sfnt_load_face): Tweak allocation macro.
+
+2021-05-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/cid/cidload.c (cid_read_subrs): Tweak allocation macro.
+
+2021-05-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/base/ftrfork.c (FT_Raccess_Get_DataOffsets): Tweak allocation.
+
+2021-05-05  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[cff,psaux] Avoid memory zeroing (contd.).
+
+	* src/cff/cffload.c (cff_blend_doBlend, cff_blend_build_vector): Tweak
+	allocation macros.
+	* src/psaux/psarrst.c (cf2_arrstack_setNumElements): Ditto.
+	* src/psaux/psstack.c (cf2_stack_init): Ditto.
+
 2021-05-04  Ben Wagner  <bungeman@chromium.org>
 
 	* src/cid/cidload.c (cid_hex_to_binary): Improve return value.
