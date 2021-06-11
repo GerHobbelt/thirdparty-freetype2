@@ -629,7 +629,7 @@
   }
 
 
-  FT_LOCAL_DEF ( FT_Bool )
+  FT_LOCAL_DEF( FT_Bool )
   tt_face_get_colr_glyph_paint( TT_Face                  face,
                                 FT_UInt                  base_glyph,
                                 FT_Color_Root_Transform  root_transform,
@@ -702,6 +702,13 @@
     p = iterator->p;
 
     /*
+     * First ensure that p is within COLRv1.
+     */
+    if ( p < colr->base_glyphs_v1                          ||
+         p >= ( (FT_Byte*)colr->table + colr->table_size ) )
+      return 0;
+
+    /*
      * Do a cursor sanity check of the iterator.  Counting backwards from
      * where it stands, we need to end up at a position after the beginning
      * of the `LayerV1List` table and not after the end of the
@@ -738,7 +745,7 @@
   }
 
 
-  FT_LOCAL_DEF ( FT_Bool )
+  FT_LOCAL_DEF( FT_Bool )
   tt_face_get_colorline_stops( TT_Face                face,
                                FT_ColorStop*          color_stop,
                                FT_ColorStopIterator  *iterator )
