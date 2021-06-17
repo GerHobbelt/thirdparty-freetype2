@@ -1,3 +1,41 @@
+2021-06-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[type42] Fix new memory leak.
+
+	We need to inverse inheritance of FT_GlyphSlot_Internal so that we
+	have a chance to free the rendered bitmap from the parent slot.
+
+	* src/type42/t42objs.c (T42_GlyphSlot_Init): Remove the internal parts
+	of the child `ttslot' and replace it with the parent structure.
+	(T42_GlyphSlot_Done): Updated accordingly.
+
+2021-06-12  Werner Lemberg  <wl@gnu.org>
+
+	[psaux] Fix another assertion.
+
+	* src/psaux/psintrp.c (cf2_interpT2CharString)
+	<cf2_escCALLOTHERSUBR>: Convert assertion into error, since the
+	problem can happen with invalid user input.
+
+	Test case is file
+
+	  fuzzing/corpora/legacy/oss-fuzz/5754332360212480-unknown-read
+
+	in the `freetype2-testing` repository.
+
+2021-06-12  Werner Lemberg  <wl@gnu.org>
+
+	[psaux] Fix assertions.
+
+	* src/psaux/pshints.c (cf2_hintmap_adjustHints): Check for overflow
+	before emitting an assertion error.
+
+	Test case is file
+
+	 fuzzing/corpora/legacy/oss-fuzz/4594115297673216-integer-overflow
+
+	in the `freetype2-testing` repository.
+
 2021-06-09  Alexei Podtelezhnikov  <apodtele@gmail.com>
 
 	* src/truetype/ttinterp.c (TT_RunIns): Optimize tracing. 
