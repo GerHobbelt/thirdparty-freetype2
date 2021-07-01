@@ -34,6 +34,7 @@ files {
   "src/base/ftadvanc.c",
   "src/base/ftbitmap.c",
   "src/base/ftcalc.c",
+  "src/base/ftcolor.c",
   "src/base/ftdebug.c",
   "src/base/ftfntfmt.c",
   "src/base/ftfstype.c",
