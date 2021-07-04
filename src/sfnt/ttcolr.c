@@ -41,12 +41,23 @@
 
   /* NOTE: These are the table sizes calculated through the specs. */
 #define BASE_GLYPH_SIZE                   6U
-#define BASE_GLYPH_V1_RECORD_SIZE         6U
+#define BASE_GLYPH_PAINT_RECORD_SIZE      6U
 #define LAYER_V1_LIST_PAINT_OFFSET_SIZE   4U
 #define LAYER_V1_LIST_NUM_LAYERS_SIZE     4U
 #define COLOR_STOP_SIZE                   6U
 #define LAYER_SIZE                        4U
 #define COLR_HEADER_SIZE                 14U
+
+
+  typedef enum  FT_PaintFormat_Internal_
+  {
+    FT_COLR_PAINTFORMAT_INTERNAL_SCALE_CENTER         = 18,
+    FT_COLR_PAINTFORMAT_INTERNAL_SCALE_UNIFORM        = 20,
+    FT_COLR_PAINTFORMAT_INTERNAL_SCALE_UNIFORM_CENTER = 22,
+    FT_COLR_PAINTFORMAT_INTERNAL_ROTATE_CENTER        = 26,
+    FT_COLR_PAINTFORMAT_INTERNAL_SKEW_CENTER          = 30
+
+  } FT_PaintFormat_Internal;
 
 
   typedef struct  BaseGlyphRecord_
@@ -82,6 +93,13 @@
 
     FT_ULong  num_layers_v1;
     FT_Byte*  layers_v1;
+
+    /*
+     * Paint tables start at the minimum of the end of the LayerList and the
+     * end of the BaseGlyphList.  Record this location in a field here for
+     * safety checks when accessing paint tables.
+     */
+    FT_Byte*  paints_start_v1;
 
     /* The memory that backs up the `COLR' table. */
     void*     table;
@@ -170,7 +188,7 @@
       p1                 = (FT_Byte*)( table + base_glyphs_offset_v1 );
       num_base_glyphs_v1 = FT_PEEK_ULONG( p1 );
 
-      if ( num_base_glyphs_v1 * BASE_GLYPH_V1_RECORD_SIZE >
+      if ( num_base_glyphs_v1 * BASE_GLYPH_PAINT_RECORD_SIZE >
              table_size - base_glyphs_offset_v1 )
         goto InvalidTable;
 
@@ -179,14 +197,35 @@
 
       layer_offset_v1 = FT_NEXT_ULONG( p );
 
-      if ( !layer_offset_v1 || layer_offset_v1 >= table_size )
+      if ( layer_offset_v1 >= table_size )
         goto InvalidTable;
 
-      p1            = (FT_Byte*)( table + layer_offset_v1 );
-      num_layers_v1 = FT_PEEK_ULONG( p1 );
+      if ( layer_offset_v1 )
+      {
+        p1            = (FT_Byte*)( table + layer_offset_v1 );
+        num_layers_v1 = FT_PEEK_ULONG( p1 );
 
-      colr->num_layers_v1 = num_layers_v1;
-      colr->layers_v1     = p1;
+        if ( num_layers_v1 * LAYER_V1_LIST_PAINT_OFFSET_SIZE >
+               table_size - layer_offset_v1 )
+          goto InvalidTable;
+
+        colr->num_layers_v1 = num_layers_v1;
+        colr->layers_v1     = p1;
+
+        colr->paints_start_v1 =
+            FT_MIN( colr->base_glyphs_v1 +
+                    colr->num_base_glyphs_v1 * BASE_GLYPH_PAINT_RECORD_SIZE,
+                    colr->layers_v1 +
+                    colr->num_layers_v1 * LAYER_V1_LIST_PAINT_OFFSET_SIZE );
+      }
+      else
+      {
+        colr->num_layers_v1   = 0;
+        colr->layers_v1       = 0;
+        colr->paints_start_v1 =
+          colr->base_glyphs_v1 +
+          colr->num_base_glyphs_v1 * BASE_GLYPH_PAINT_RECORD_SIZE;
+      }
     }
 
     colr->base_glyphs = (FT_Byte*)( table + base_glyph_offset );
@@ -367,7 +406,7 @@
 
     child_table_p = (FT_Byte*)( paint_base + paint_offset );
 
-    if ( child_table_p < colr->base_glyphs_v1                          ||
+    if ( child_table_p < colr->paints_start_v1                         ||
          child_table_p >= ( (FT_Byte*)colr->table + colr->table_size ) )
       return 0;
 
@@ -388,7 +427,7 @@
     if ( !p || !colr || !colr->table )
       return 0;
 
-    if ( p < colr->base_glyphs_v1                          ||
+    if ( p < colr->paints_start_v1                         ||
          p >= ( (FT_Byte*)colr->table + colr->table_size ) )
       return 0;
 
@@ -533,6 +572,53 @@
       return 1;
     }
 
+    else if ( apaint->format ==
+                FT_COLR_PAINTFORMAT_SCALE                         ||
+              (FT_PaintFormat_Internal)apaint->format ==
+                FT_COLR_PAINTFORMAT_INTERNAL_SCALE_CENTER         ||
+              (FT_PaintFormat_Internal)apaint->format ==
+                FT_COLR_PAINTFORMAT_INTERNAL_SCALE_UNIFORM        ||
+              (FT_PaintFormat_Internal)apaint->format ==
+                FT_COLR_PAINTFORMAT_INTERNAL_SCALE_UNIFORM_CENTER )
+    {
+      apaint->u.scale.paint.p                     = child_table_p;
+      apaint->u.scale.paint.insert_root_transform = 0;
+
+      /* All scale paints get at least one scale value. */
+      apaint->u.scale.scale_x = FT_NEXT_LONG( p );
+
+      /* Non-uniform ones read an extra y value. */
+      if ( apaint->format ==
+             FT_COLR_PAINTFORMAT_SCALE                 ||
+           (FT_PaintFormat_Internal)apaint->format ==
+             FT_COLR_PAINTFORMAT_INTERNAL_SCALE_CENTER )
+        apaint->u.scale.scale_y = FT_NEXT_LONG( p );
+      else
+        apaint->u.scale.scale_y = apaint->u.scale.scale_x;
+
+      /* Scale paints that have a center read center coordinates, */
+      /* otherwise the center is (0,0).                           */
+      if ( (FT_PaintFormat_Internal)apaint->format ==
+             FT_COLR_PAINTFORMAT_INTERNAL_SCALE_CENTER         ||
+           (FT_PaintFormat_Internal)apaint->format ==
+             FT_COLR_PAINTFORMAT_INTERNAL_SCALE_UNIFORM_CENTER )
+      {
+        apaint->u.scale.center_x = FT_NEXT_LONG ( p );
+        apaint->u.scale.center_y = FT_NEXT_LONG ( p );
+      }
+      else
+      {
+        apaint->u.scale.center_x = 0;
+        apaint->u.scale.center_y = 0;
+      }
+
+      /* FT 'COLR' v1 API output format always returns fully defined */
+      /* structs; we thus set the format to the public API value.    */
+      apaint->format = FT_COLR_PAINTFORMAT_SCALE;
+
+      return 1;
+    }
+
     else if ( apaint->format == FT_COLR_PAINTFORMAT_ROTATE )
     {
       apaint->u.rotate.paint.p                     = child_table_p;
@@ -608,7 +694,7 @@
        * skip `numBaseGlyphV1Records` by adding 4 to start binary search
        * in the array of `BaseGlyphV1Record`.
        */
-      FT_Byte  *p = base_glyph_begin + 4 + mid * BASE_GLYPH_V1_RECORD_SIZE;
+      FT_Byte  *p = base_glyph_begin + 4 + mid * BASE_GLYPH_PAINT_RECORD_SIZE;
 
       FT_UShort  gid = FT_NEXT_USHORT( p );
 
@@ -704,7 +790,7 @@
     /*
      * First ensure that p is within COLRv1.
      */
-    if ( p < colr->base_glyphs_v1                          ||
+    if ( p < colr->layers_v1                               ||
          p >= ( (FT_Byte*)colr->table + colr->table_size ) )
       return 0;
 
@@ -731,7 +817,7 @@
 
     p_paint = (FT_Byte*)( colr->layers_v1 + paint_offset );
 
-    if ( p_paint < colr->base_glyphs_v1                          ||
+    if ( p_paint < colr->paints_start_v1                         ||
          p_paint >= ( (FT_Byte*)colr->table + colr->table_size ) )
       return 0;
 
