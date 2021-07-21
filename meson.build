@@ -194,6 +194,7 @@ has_sys_mman_h = cc.has_header('sys/mman.h')
 
 mmap_option = get_option('mmap')
 
+use_unix_ftsystem_c = false
 if mmap_option.disabled()
   ft2_sources += files(['src/base/ftsystem.c',])
 elif host_machine.system() == 'windows'
@@ -202,6 +203,7 @@ else
   if has_unistd_h and has_fcntl_h and has_sys_mman_h
     # This version of `ftsystem.c` uses `mmap` to read input font files.
     ft2_sources += files(['builds/unix/ftsystem.c',])
+    use_unix_ftsystem_c = true
   elif mmap_option.enabled()
     error('mmap was enabled via options but is not available,'
           + ' required headers were not found!')
@@ -331,7 +333,7 @@ if has_fcntl_h
   ftconfig_command += '--enable=HAVE_FCNTL_H'
 endif
 
-if host_machine.system() in ['linux', 'darwin', 'cygwin']
+if use_unix_ftsystem_c
   ftconfig_h_in = files('builds/unix/ftconfig.h.in')
   ftconfig_h = custom_target('ftconfig.h',
     input: ftconfig_h_in,

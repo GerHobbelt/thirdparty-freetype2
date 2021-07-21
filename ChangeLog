@@ -1,3 +1,154 @@
+2021-07-13  Oleg Oshmyan  <chortos@inbox.lv>
+
+	[base] Fix `FT_Open_Face`'s handling of user-supplied streams.
+
+	This was already true (though undocumented) most of the time, but
+	not if `FT_NEW` inside `FT_Stream_New` failed or if the
+	`FT_OPEN_XXX` flags were bad.
+
+	Normally, `FT_Open_Face` calls `FT_Stream_New`, which returns the
+	user-supplied stream unchanged, and in case of any subsequent error
+	in `FT_Open_Face`, the stream is closed via `FT_Stream_Free`.
+
+	Up to now, however, `FT_Stream_New` allocates a new stream even if
+	it is already given one by the user.  If this allocation fails, the
+	user-supplied stream is not returned to `FT_Open_Face` and never
+	closed.  Moreover, the user cannot detect this situation: all they
+	see is that `FT_Open_Face` returns `FT_Err_Out_Of_Memory`, but that
+	can also happen after a different allocation fails within the main
+	body of `FT_Open_Face`, when the user's stream has already been
+	closed by `FT_Open_Face`.  It is plausible that the user stream's
+	`close` method frees memory allocated for the stream object itself,
+	so the user cannot defensively free it upon `FT_Open_Face` failure
+	lest it ends up doubly freed.  All in all, this ends up leaking the
+	memory/resources used by user's stream.
+
+	Furthermore, `FT_Stream_New` simply returns an error if the
+	`FT_OPEN_XXX` flags are unsupported, which can mean either an
+	invalid combination of flags or a perfectly innocent
+	`FT_OPEN_STREAM` on a FreeType build that lacks stream support.
+	With this patch, the user-supplied stream is closed even in these
+	cases, so the user can be sure that if `FT_Open_Face` failed, the
+	stream is definitely closed.
+
+	* src/base/ftobjs.c (FT_Stream_New): Don't allocate a buffer
+	unnecessarily.
+	Move error-handling code to make the control flow more obvious.
+	Close user-supplied stream if the flags are unsupported.
+	`FT_Stream_Open` always sets `pathname.pointer`, so remove the
+	redundant (re)assignment.  None of the `FT_Stream_Open...` functions
+	uses `stream->memory`, so keep just one assignment at the end,
+	shared among all possible control flow paths.
+	('Unsupported flags' that may need a stream closure can be either an
+	invalid combination of multiple `FT_OPEN_XXX` mode flags or a clean
+	`FT_OPEN_STREAM` flag on a FreeType build that lacks stream
+	support.)
+
+2021-07-13  Oleg Oshmyan  <chortos@inbox.lv>
+
+	[base] Reject combinations of incompatible `FT_OPEN_XXX` flags.
+
+	The three modes are mutually exclusive, and the documentation of the
+	`FT_OPEN_XXX` constants notes this.  However, there was no check to
+	validate this in the code, and the documentation on `FT_Open_Args`
+	claimed that the corresponding bits were checked in a well-defined
+	order, implying it was valid (if useless) to specify more than one.
+	Ironically, this documented order did not agree with the actual
+	code, so it could not be relied upon; hopefully, nobody did this and
+	nobody will be hurt by the new validation.
+
+	Even if multiple mode bits were allowed, they could cause memory
+	leaks: if both `FT_OPEN_STREAM` and `stream` are set along with
+	either `FT_OPEN_MEMORY` or `FT_OPEN_PATHNAME`, then `FT_Stream_New`
+	allocated a new stream but `FT_Open_Face` marked it as an 'external'
+	stream, so the stream object was never released.
+
+	* src/base/ftobjs.c (FT_Stream_New): Reject incompatible
+	`FT_OPEN_XXX` flags.
+
+2021-07-12  Alex Richardson  <Alexander.Richardson@cl.cam.ac.uk>
+
+	* meson.build: Fix build for other UNIX systems (e.g., FreeBSD).
+
+	Without this change the build of `unix/ftsystem.c` fails because the
+	`ftconfig.h` header that defines macros such as `HAVE_UNISTD_H` and
+	`HAVE_FCNTL_H` is only being generated for Linux, macOS, and Cygwin
+	systems:
+
+	```
+	.../builds/unix/ftsystem.c:258:32: error:
+	    use of undeclared identifier 'O_RDONLY'
+	file = open( filepathname, O_RDONLY );
+	```
+
+	Instead of hardcoding a list of operating systems for this check,
+	update the logic that decides whether to build the file and set a
+	boolean flag that can be checked instead.
+
+2021-07-12  Werner Lemberg  <wl@gnu.org>
+
+	[autofit] More clean-ups.
+
+	* src/autofit/afhints.h (AF_GlyphHintsRec): Remove the no longer
+	needed fields `xmin_delta` and `xmax_delta`.
+
+	* src/autofit/afhints.c (af_glyph_hints_reload),
+	src/autofit/afloader.c (af_loader_load_glyph): Updated.
+
+2021-07-12  Werner Lemberg  <wl@gnu.org>
+
+	Small clean-ups for the last few commits.
+
+	* include/freetype/fttrace.h (afwarp): Removed.
+
+2021-07-12  David Turner  <david@freetype.org>
+
+	Remove obsolete `AF_Angle` type and related sources.
+
+	* src/autofit/afangles.c: File removed.  Functions related to
+	sorting moved to...
+	* src/autofit/afhints.c (af_sort_pos, af_sort_and_quantize_widths):
+	This file.
+	* src/autofit/afangles.h: File removed.
+	* src/autofit/aftypes.h: Updated.
+	* src/autofit/autofit.c: Updated.
+
+	* src/autofit/rules.mk (AUTOF_DRV_SRC): Updated.
+
+2021-07-12  David Turner  <david@freetype.org>
+
+	Remove experimental auto-hinting 'warp' mode.
+
+	This feature was always experimental, and probably never worked
+	properly.  This patch completely removes it from the source code,
+	except for a documentation block describing it for historical
+	purposes.
+
+	* devel/ftoption.h, include/freetype/config/ftoption.h: Remove
+	`AF_CONFIG_OPTION_USE_WARPER`.
+
+	* include/freetype/ftdriver.h: Document 'warping' property as
+	obsolete.
+
+	* src/autofit/afwarp.c, src/autofit/afwarp.h: Files removed.
+	* src/autofit/*: Remove any code related to warp mode.
+
+2021-07-12  David Turner  <david@freetype.org>
+
+	Remove experimental 'Latin2' writing system (`FT_OPTION_AUTOFIT2`).
+
+	This code has always been experimental and was never compiled anyway
+	(`FT_OPTION_AUTOFIT2` does not appear in `ftoption.h` or even any of
+	our build files).
+
+	* include/freetype/internal/fttrace.h (aflatin2): Removed.
+	* src/autofit/aflatin2.h, src/autofit/aflatin2.c: Files removed.
+	* src/autofit/afloader.c: Remove undocumented hook to activate
+	Latin2 system.
+	* src/autofit/afstyles.h: Remove `ltn2_dflt` style definition.
+	* src/autofit/afwrtsys.h: Remove `LATIN2` writing system definition.
+	* src/autofit/autofit.c: Updated.
+
 2021-07-05  Werner Lemberg  <wl@gnu.org>
 
 	* src/base/ftlcdfil.c (FT_Library_SetLcdGeometry): Fix argument.
