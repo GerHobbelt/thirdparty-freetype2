@@ -75,7 +75,7 @@
       if ( code == 0 )
         break;
 
-      if ( code < 32 || code > 127 )
+      if ( code < 32 || code >= 127 )
         code = '?';
 
       string[n] = (char)code;
@@ -110,7 +110,7 @@
       if ( code == 0 )
         break;
 
-      if ( code < 32 || code > 127 )
+      if ( code < 32 || code >= 127 )
         code = '?';
 
       string[n] = (char)code;
