@@ -531,8 +531,8 @@
       apaint->u.sweep_gradient.center.x = FT_NEXT_SHORT( p );
       apaint->u.sweep_gradient.center.y = FT_NEXT_SHORT( p );
 
-      apaint->u.sweep_gradient.start_angle = FT_NEXT_LONG( p );
-      apaint->u.sweep_gradient.end_angle = FT_NEXT_LONG( p );
+      apaint->u.sweep_gradient.start_angle = FT_NEXT_SHORT( p ) << 2;
+      apaint->u.sweep_gradient.end_angle   = FT_NEXT_SHORT( p ) << 2;
 
       return 1;
     }
@@ -551,6 +551,11 @@
       apaint->u.transform.paint.p                     = child_table_p;
       apaint->u.transform.paint.insert_root_transform = 0;
 
+      if ( !get_child_table_pointer( colr, paint_base, &p, &child_table_p ) )
+         return 0;
+
+      p = child_table_p;
+
       apaint->u.transform.affine.xx = FT_NEXT_LONG( p );
       apaint->u.transform.affine.yx = FT_NEXT_LONG( p );
       apaint->u.transform.affine.xy = FT_NEXT_LONG( p );
@@ -566,8 +571,8 @@
       apaint->u.translate.paint.p                     = child_table_p;
       apaint->u.translate.paint.insert_root_transform = 0;
 
-      apaint->u.translate.dx = FT_NEXT_LONG( p );
-      apaint->u.translate.dy = FT_NEXT_LONG( p );
+      apaint->u.translate.dx = FT_NEXT_SHORT( p ) << 16;
+      apaint->u.translate.dy = FT_NEXT_SHORT( p ) << 16;
 
       return 1;
     }
@@ -585,14 +590,14 @@
       apaint->u.scale.paint.insert_root_transform = 0;
 
       /* All scale paints get at least one scale value. */
-      apaint->u.scale.scale_x = FT_NEXT_LONG( p );
+      apaint->u.scale.scale_x = FT_NEXT_SHORT( p ) << 2;
 
       /* Non-uniform ones read an extra y value. */
       if ( apaint->format ==
              FT_COLR_PAINTFORMAT_SCALE                 ||
            (FT_PaintFormat_Internal)apaint->format ==
              FT_COLR_PAINTFORMAT_INTERNAL_SCALE_CENTER )
-        apaint->u.scale.scale_y = FT_NEXT_LONG( p );
+        apaint->u.scale.scale_y = FT_NEXT_SHORT( p ) << 2;
       else
         apaint->u.scale.scale_y = apaint->u.scale.scale_x;
 
@@ -603,8 +608,8 @@
            (FT_PaintFormat_Internal)apaint->format ==
              FT_COLR_PAINTFORMAT_INTERNAL_SCALE_UNIFORM_CENTER )
       {
-        apaint->u.scale.center_x = FT_NEXT_LONG ( p );
-        apaint->u.scale.center_y = FT_NEXT_LONG ( p );
+        apaint->u.scale.center_x = FT_NEXT_SHORT ( p ) << 16;
+        apaint->u.scale.center_y = FT_NEXT_SHORT ( p ) << 16;
       }
       else
       {
@@ -619,29 +624,59 @@
       return 1;
     }
 
-    else if ( apaint->format == FT_COLR_PAINTFORMAT_ROTATE )
+    else if ( apaint->format == FT_COLR_PAINTFORMAT_ROTATE ||
+              (FT_PaintFormat_Internal)apaint->format ==
+                FT_COLR_PAINTFORMAT_INTERNAL_ROTATE_CENTER )
     {
       apaint->u.rotate.paint.p                     = child_table_p;
       apaint->u.rotate.paint.insert_root_transform = 0;
 
-      apaint->u.rotate.angle = FT_NEXT_LONG( p );
+      /* The angle is specified as F2DOT14 and our output type is an FT_Fixed,
+       * shift by 2 positions. */
+      apaint->u.rotate.angle = FT_NEXT_SHORT( p ) << 2;
 
-      apaint->u.rotate.center_x = FT_NEXT_LONG( p );
-      apaint->u.rotate.center_y = FT_NEXT_LONG( p );
+      if ( (FT_PaintFormat_Internal)apaint->format ==
+           FT_COLR_PAINTFORMAT_INTERNAL_ROTATE_CENTER )
+      {
+        /* The center is specified as Int16 in font units, shift by 16 bits to
+         * convert to our FT_Fixed output type. */
+        apaint->u.rotate.center_x = FT_NEXT_SHORT( p ) << 16;
+        apaint->u.rotate.center_y = FT_NEXT_SHORT( p ) << 16;
+      }
+      else
+      {
+        apaint->u.rotate.center_x = 0;
+        apaint->u.rotate.center_y = 0;
+      }
+
+      apaint->format = FT_COLR_PAINTFORMAT_ROTATE;
 
       return 1;
     }
 
-    else if ( apaint->format == FT_COLR_PAINTFORMAT_SKEW )
+    else if ( apaint->format == FT_COLR_PAINTFORMAT_SKEW ||
+              (FT_PaintFormat_Internal)apaint->format ==
+                FT_COLR_PAINTFORMAT_INTERNAL_SKEW_CENTER )
     {
       apaint->u.skew.paint.p                     = child_table_p;
       apaint->u.skew.paint.insert_root_transform = 0;
 
-      apaint->u.skew.x_skew_angle = FT_NEXT_LONG( p );
-      apaint->u.skew.y_skew_angle = FT_NEXT_LONG( p );
+      apaint->u.skew.x_skew_angle = FT_NEXT_SHORT( p ) << 2;
+      apaint->u.skew.y_skew_angle = FT_NEXT_SHORT( p ) << 2;
 
-      apaint->u.skew.center_x = FT_NEXT_LONG( p );
-      apaint->u.skew.center_y = FT_NEXT_LONG( p );
+      if ( (FT_PaintFormat_Internal)apaint->format ==
+           FT_COLR_PAINTFORMAT_INTERNAL_SKEW_CENTER )
+      {
+        apaint->u.skew.center_x = FT_NEXT_SHORT( p ) << 16;
+        apaint->u.skew.center_y = FT_NEXT_SHORT( p ) << 16;
+      }
+      else
+      {
+        apaint->u.skew.center_x = 0;
+        apaint->u.skew.center_y = 0;
+      }
+
+      apaint->format = FT_COLR_PAINTFORMAT_SKEW;
 
       return 1;
     }

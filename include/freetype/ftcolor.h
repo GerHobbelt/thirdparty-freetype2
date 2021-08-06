@@ -965,14 +965,16 @@ FT_BEGIN_HEADER
    *     The center of the sweep gradient (in font units).
    *
    *   start_angle ::
-   *     The start angle of the sweep gradient, in 16.16 fixed point format
-   *     specifying degrees.  Values are given counter-clockwise, starting
-   *     from the (positive) y~axis.
+   *     The start angle of the sweep gradient, in 16.16 fixed point
+   *     format specifying degrees divided by 180.0 (as in the
+   *     spec).  Multiply by 180.0f to receive degrees value.  Values are
+   *     given counter-clockwise, starting from the (positive) y~axis.
    *
    *   end_angle ::
-   *     The end angle of the sweep gradient, in 16.16 fixed point format
-   *     specifying degrees.  Values are given counter-clockwise, starting
-   *     from the (positive) y~axis.
+   *     The end angle of the sweep gradient, in 16.16 fixed point
+   *     format specifying degrees divided by 180.0 (as in the
+   *     spec).  Multiply by 180.0f to receive degrees value.  Values are
+   *     given counter-clockwise, starting from the (positive) y~axis.
    *
    * @since:
    *   2.11 -- **currently experimental only!**  There might be changes
@@ -1173,7 +1175,9 @@ FT_BEGIN_HEADER
    *     rotated.
    *
    *   angle ::
-   *     The rotation angle that is to be applied.
+   *     The rotation angle that is to be applied in degrees divided by
+   *     180.0 (as in the spec).  Multiply by 180.0f to receive degrees
+   *     value.
    *
    *   center_x ::
    *     The x~coordinate of the pivot point of the rotation (in font
@@ -1217,10 +1221,12 @@ FT_BEGIN_HEADER
    *     skewed.
    *
    *   x_skew_angle ::
-   *     The skewing angle in x~direction.
+   *     The skewing angle in x~direction in degrees divided by 180.0
+   *     (as in the spec).  Multiply by 180.0f to receive degrees.
    *
    *   y_skew_angle ::
-   *     The skewing angle in y~direction.
+   *     The skewing angle in y~direction in degrees divided by 180.0
+   *     (as in the spec).  Multiply by 180.0f to receive degrees.
    *
    *   center_x ::
    *     The x~coordinate of the pivot point of the skew (in font units).
