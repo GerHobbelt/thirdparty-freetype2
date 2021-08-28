@@ -4699,7 +4699,7 @@
         else
           renderer = FT_Lookup_Renderer( library, slot->format, &node );
 
-        error = FT_ERR( Unimplemented_Feature );
+        error = FT_ERR( Cannot_Render_Glyph );
         while ( renderer )
         {
           error = renderer->render( renderer, slot, render_mode, NULL );
@@ -4715,6 +4715,11 @@
           /* format.                                               */
           renderer = FT_Lookup_Renderer( library, slot->format, &node );
         }
+
+        /* it is not an error if we cannot render a bitmat glyph */
+        if ( FT_ERR_EQ( error, Cannot_Render_Glyph ) &&
+             slot->format == FT_GLYPH_FORMAT_BITMAP  )
+          error = FT_Err_Ok;
       }
     }
 
