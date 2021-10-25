@@ -400,7 +400,7 @@
 
   /* Allocate a table containing pointers to an index's elements. */
   /* The `pool' argument makes this function convert the index    */
-  /* entries to C-style strings (this is, NULL-terminated).       */
+  /* entries to C-style strings (this is, null-terminated).       */
   static FT_Error
   cff_index_get_pointers( CFF_Index   idx,
                           FT_Byte***  table,
@@ -771,8 +771,7 @@
 
     case 3:
       /* first, compare to the cache */
-      if ( (FT_UInt)( glyph_index - fdselect->cache_first ) <
-                        fdselect->cache_count )
+      if ( glyph_index - fdselect->cache_first < fdselect->cache_count )
       {
         fd = fdselect->cache_fd;
         break;
@@ -1819,7 +1818,8 @@
         /* Construct code to GID mapping from code to SID mapping */
         /* and charset.                                           */
 
-        encoding->count = 0;
+        encoding->offset = offset; /* used in cff_face_init */
+        encoding->count  = 0;
 
         error = cff_charset_compute_cids( charset, num_glyphs,
                                           stream->memory );
