@@ -117,9 +117,9 @@
         goto Exit;
 
       blend->num_default_design_vector = 0;
-      blend->weight_vector = NULL;
-      blend->default_weight_vector = NULL;
-      blend->design_pos[0] = NULL;
+      blend->weight_vector             = NULL;
+      blend->default_weight_vector     = NULL;
+      blend->design_pos[0]             = NULL;
 
       face->blend = blend;
     }
@@ -133,9 +133,9 @@
 
 
         /* allocate the blend `private' and `font_info' dictionaries */
-        if ( FT_QNEW_ARRAY( blend->font_infos[1], num_designs ) ||
-             FT_QNEW_ARRAY( blend->privates  [1], num_designs ) ||
-             FT_QNEW_ARRAY( blend->bboxes    [1], num_designs ) )
+        if ( FT_NEW_ARRAY( blend->font_infos[1], num_designs ) ||
+             FT_NEW_ARRAY( blend->privates  [1], num_designs ) ||
+             FT_NEW_ARRAY( blend->bboxes    [1], num_designs ) )
           goto Exit;
 
         blend->font_infos[0] = &face->type1.font_info;
@@ -858,9 +858,9 @@
     T1_TokenRec  design_tokens[T1_MAX_MM_DESIGNS];
     FT_Int       num_designs;
     FT_Int       num_axis = 0; /* make compiler happy */
-    T1_Parser    parser = &loader->parser;
-    FT_Memory    memory = face->root.memory;
-    FT_Error     error = FT_Err_Ok;
+    T1_Parser    parser   = &loader->parser;
+    FT_Memory    memory   = face->root.memory;
+    FT_Error     error    = FT_Err_Ok;
     FT_Fixed*    design_pos[T1_MAX_MM_DESIGNS];
 
 
@@ -886,7 +886,7 @@
     {
       FT_Byte*  old_cursor = parser->root.cursor;
       FT_Byte*  old_limit  = parser->root.limit;
-      FT_Int    n,nn;
+      FT_Int    n, nn;
       PS_Blend  blend;
 
 
@@ -965,7 +965,7 @@
       for ( n = 0; n < num_designs; n++ )
       {
         blend->design_pos[n] = design_pos[n];
-        design_pos[n] = NULL;
+        design_pos[n]        = NULL;
       }
     }
 
