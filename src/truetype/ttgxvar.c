@@ -178,7 +178,7 @@
     /* in the nested loops below we increase `i' twice; */
     /* it is faster to simply allocate one more slot    */
     /* than to add another test within the loop         */
-    if ( FT_NEW_ARRAY( points, n + 1 ) )
+    if ( FT_QNEW_ARRAY( points, n + 1 ) )
       return NULL;
 
     *point_cnt = n;
@@ -264,55 +264,80 @@
     FT_Fixed  *deltas = NULL;
     FT_UInt    runcnt, cnt;
     FT_UInt    i, j;
+    FT_UInt    bytes_used;
     FT_Memory  memory = stream->memory;
     FT_Error   error  = FT_Err_Ok;
 
     FT_UNUSED( error );
 
 
-    if ( delta_cnt > size )
-    {
-      FT_TRACE1(( "ft_var_readpackeddeltas: number of points too large\n" ));
-      return NULL;
-    }
-
-    if ( FT_NEW_ARRAY( deltas, delta_cnt ) )
+    if ( FT_QNEW_ARRAY( deltas, delta_cnt ) )
       return NULL;
 
-    i = 0;
-    while ( i < delta_cnt )
+    i          = 0;
+    bytes_used = 0;
+
+    while ( i < delta_cnt && bytes_used < size )
     {
       runcnt = FT_GET_BYTE();
       cnt    = runcnt & GX_DT_DELTA_RUN_COUNT_MASK;
 
+      bytes_used++;
+
       if ( runcnt & GX_DT_DELTAS_ARE_ZERO )
       {
-        /* `runcnt' zeroes get added */
+        /* `cnt` + 1 zeroes get added */
         for ( j = 0; j <= cnt && i < delta_cnt; j++ )
           deltas[i++] = 0;
       }
       else if ( runcnt & GX_DT_DELTAS_ARE_WORDS )
       {
-        /* `runcnt' shorts from the stack */
+        /* `cnt` + 1 shorts from the stack */
+        bytes_used += 2 * ( cnt + 1 );
+        if ( bytes_used > size )
+        {
+          FT_TRACE1(( "ft_var_readpackeddeltas:"
+                      " number of short deltas too large\n" ));
+          goto Fail;
+        }
+
         for ( j = 0; j <= cnt && i < delta_cnt; j++ )
           deltas[i++] = FT_intToFixed( FT_GET_SHORT() );
       }
       else
       {
-        /* `runcnt' signed bytes from the stack */
+        /* `cnt` + 1 signed bytes from the stack */
+        bytes_used += cnt + 1;
+        if ( bytes_used > size )
+        {
+          FT_TRACE1(( "ft_var_readpackeddeltas:"
+                      " number of byte deltas too large\n" ));
+          goto Fail;
+        }
+
         for ( j = 0; j <= cnt && i < delta_cnt; j++ )
           deltas[i++] = FT_intToFixed( FT_GET_CHAR() );
       }
 
       if ( j <= cnt )
       {
-        /* bad format */
-        FT_FREE( deltas );
-        return NULL;
+        FT_TRACE1(( "ft_var_readpackeddeltas:"
+                    " number of deltas too large\n" ));
+        goto Fail;
       }
     }
 
+    if ( i < delta_cnt )
+    {
+      FT_TRACE1(( "ft_var_readpackeddeltas: not enough deltas\n" ));
+      goto Fail;
+    }
+
     return deltas;
+
+  Fail:
+    FT_FREE( deltas );
+    return NULL;
   }
 
 
@@ -377,7 +402,7 @@
       goto Exit;
     }
 
-    if ( FT_NEW_ARRAY( blend->avar_segment, axisCount ) )
+    if ( FT_QNEW_ARRAY( blend->avar_segment, axisCount ) )
       goto Exit;
 
     segment = &blend->avar_segment[0];
@@ -386,8 +411,8 @@
       FT_TRACE5(( "  axis %d:\n", i ));
 
       segment->pairCount = FT_GET_USHORT();
-      if ( (FT_ULong)segment->pairCount * 4 > table_len                ||
-           FT_NEW_ARRAY( segment->correspondence, segment->pairCount ) )
+      if ( (FT_ULong)segment->pairCount * 4 > table_len                 ||
+           FT_QNEW_ARRAY( segment->correspondence, segment->pairCount ) )
       {
         /* Failure.  Free everything we have done so far.  We must do */
         /* it right now since loading the `avar' table is optional.   */
@@ -467,7 +492,7 @@
 
     /* make temporary copy of item variation data offsets; */
     /* we will parse region list first, then come back     */
-    if ( FT_NEW_ARRAY( dataOffsetArray, itemStore->dataCount ) )
+    if ( FT_QNEW_ARRAY( dataOffsetArray, itemStore->dataCount ) )
       goto Exit;
 
     for ( i = 0; i < itemStore->dataCount; i++ )
@@ -1569,7 +1594,7 @@
       goto Exit;
 
     /* offsets (one more offset than glyphs, to mark size of last) */
-    if ( FT_NEW_ARRAY( blend->glyphoffsets, gvar_head.glyphCount + 1 ) )
+    if ( FT_QNEW_ARRAY( blend->glyphoffsets, gvar_head.glyphCount + 1 ) )
       goto Fail2;
 
     if ( gvar_head.flags & 1 )
@@ -1648,8 +1673,8 @@
         goto Fail;
       }
 
-      if ( FT_NEW_ARRAY( blend->tuplecoords,
-                         gvar_head.axisCount * gvar_head.globalCoordCount ) )
+      if ( FT_QNEW_ARRAY( blend->tuplecoords,
+                          gvar_head.axisCount * gvar_head.globalCoordCount ) )
         goto Fail2;
 
       for ( i = 0; i < gvar_head.globalCoordCount; i++ )
@@ -3164,7 +3189,7 @@
   /*************************************************************************/
 
 
-#ifdef TT_CONFIG_GPTION_BYTECODE_INTERPRETER
+#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
 
   static FT_Error
   tt_cvt_ready_iterator( FT_ListNode  node,
@@ -3211,7 +3236,7 @@
   tt_face_vary_cvt( TT_Face    face,
                     FT_Stream  stream )
   {
-#ifdef TT_CONFIG_GPTION_BYTECODE_INTERPRETER
+#ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
 
     FT_Error   error;
     FT_Memory  memory = stream->memory;
@@ -3416,9 +3441,7 @@
                                         point_count == 0 ? face->cvt_size
                                                          : point_count );
 
-      if ( !points                                                        ||
-           !deltas                                                        ||
-           ( localpoints == ALL_POINTS && point_count != face->cvt_size ) )
+      if ( !points || !deltas )
         ; /* failure, ignore it */
 
       else if ( localpoints == ALL_POINTS )
