@@ -5260,16 +5260,21 @@
       }
     }
 
-    exc->GS.instruct_control &= ~(FT_Byte)Kf;
-    exc->GS.instruct_control |= (FT_Byte)L;
+    /* INSTCTRL should only be used in the CVT program */
+    if ( exc->iniRange == tt_coderange_cvt )
+    {
+      exc->GS.instruct_control &= ~(FT_Byte)Kf;
+      exc->GS.instruct_control |= (FT_Byte)L;
+    }
 
-    if ( K == 3 )
+    /* except to change the subpixel flags temporarily */
+    else if ( exc->iniRange == tt_coderange_glyph && K == 3 )
     {
 #ifdef TT_SUPPORT_SUBPIXEL_HINTING_INFINALITY
       /* INSTCTRL modifying flag 3 also has an effect */
       /* outside of the CVT program                   */
       if ( SUBPIXEL_HINTING_INFINALITY )
-        exc->ignore_x_mode = FT_BOOL( L == 4 );
+        exc->ignore_x_mode = !FT_BOOL( L == 4 );
 #endif
 
 #ifdef TT_SUPPORT_SUBPIXEL_HINTING_MINIMAL
@@ -5280,6 +5285,8 @@
         exc->backward_compatibility = !FT_BOOL( L == 4 );
 #endif
     }
+    else if ( exc->pedantic_hinting )
+      exc->error = FT_THROW( Invalid_Reference );
   }
 
 
@@ -7754,35 +7761,6 @@
     FT_UShort  opcode_size[1]    = { 1 };
 #endif /* TT_SUPPORT_SUBPIXEL_HINTING_INFINALITY */
 
-
-#ifdef TT_SUPPORT_SUBPIXEL_HINTING_INFINALITY
-    exc->iup_called = FALSE;
-#endif /* TT_SUPPORT_SUBPIXEL_HINTING_INFINALITY */
-
-#ifdef TT_SUPPORT_SUBPIXEL_HINTING_MINIMAL
-    /*
-     * Toggle backward compatibility according to what font wants, except
-     * when
-     *
-     * 1) we have a `tricky' font that heavily relies on the interpreter to
-     *    render glyphs correctly, for example DFKai-SB, or
-     * 2) FT_RENDER_MODE_MONO (i.e, monochome rendering) is requested.
-     *
-     * In those cases, backward compatibility needs to be turned off to get
-     * correct rendering.  The rendering is then completely up to the
-     * font's programming.
-     *
-     */
-    if ( SUBPIXEL_HINTING_MINIMAL          &&
-         exc->subpixel_hinting_lean        &&
-         !FT_IS_TRICKY( &exc->face->root ) )
-      exc->backward_compatibility = !( exc->GS.instruct_control & 4 );
-    else
-      exc->backward_compatibility = FALSE;
-
-    exc->iupx_called = FALSE;
-    exc->iupy_called = FALSE;
-#endif
 
     /* We restrict the number of twilight points to a reasonable,     */
     /* heuristic value to avoid slow execution of malformed bytecode. */
