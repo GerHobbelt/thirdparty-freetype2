@@ -1,3 +1,3 @@
 [submodule "dlg"]
 	path = subprojects/dlg
-	url = https://github.com/GerHobbelt/dlg.git
+	url = git@github.com:GerHobbelt/dlg.git
