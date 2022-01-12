@@ -9,7 +9,7 @@ variables:
 .build windows common:
   # See
   # https://gitlab.freedesktop.org/gstreamer/gst-ci/container_registry/213
-  image: 'registry.freedesktop.org/gstreamer/gst-ci/amd64/windows:v14-master'
+  image: 'registry.freedesktop.org/gstreamer/gst-ci/amd64/windows:2021-09-09.0-master'
   stage: 'build'
   tags:
     - 'docker'
