@@ -38,3 +38,10 @@ moc/
 config.mk
 objs/vc2010/
 build
+/build/
+/config.mk
+include/dlg/
+src/dlg/dlg.c
+subprojects/*
+!subprojects/*.wrap
+/tests/data/*
