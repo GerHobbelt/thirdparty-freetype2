@@ -17,7 +17,6 @@ includedirs {
 }
 
 files {
-  "src/autofit/afangles.c",
   "src/autofit/afblue.c",
   "src/autofit/afcjk.c",
   "src/autofit/afdummy.c",
@@ -29,7 +28,6 @@ files {
   "src/autofit/afmodule.c",
   "src/autofit/afranges.c",
   "src/autofit/afshaper.c",
-  "src/autofit/afwarp.c",
 
   "src/base/ftadvanc.c",
   "src/base/ftbitmap.c",
@@ -110,6 +108,11 @@ files {
 
   "src/raster/ftraster.c",
   "src/raster/ftrend1.c",
+
+  "src/sdf/ftbsdf.c",
+  "src/sdf/ftsdf.c",
+  "src/sdf/ftsdfcommon.c",
+  "src/sdf/ftsdfrend.c",
 
   "src/sfnt/sfdriver.c",
   "src/sfnt/sfobjs.c",
