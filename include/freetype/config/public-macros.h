@@ -74,7 +74,7 @@ FT_BEGIN_HEADER
   /* gcc, clang */
 #elif ( defined( __GNUC__ ) && __GNUC__ >= 4 ) || defined( __clang__ )
 #define FT_PUBLIC_FUNCTION_ATTRIBUTE \
-          __attribute__(( visibility( "default" ) ))
+          __attribute__(( visibility( "hidden" ) ))
 
   /* Sun */
 #elif defined( __SUNPRO_C ) && __SUNPRO_C >= 0x550
