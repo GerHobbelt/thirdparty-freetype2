@@ -851,12 +851,6 @@
     is_apple_sbit = 0;
     is_apple_sbix = !face->goto_table( face, TTAG_sbix, stream, 0 );
 
-    /* Apple 'sbix' color bitmaps are rendered scaled and then the 'glyf'
-     * outline rendered on top.  We don't support that yet, so just ignore
-     * the 'glyf' outline and advertise it as a bitmap-only font. */
-    if ( is_apple_sbix )
-      has_outline = FALSE;
-
     /* if this font doesn't contain outlines, we try to load */
     /* a `bhed' table                                        */
     if ( !has_outline && sfnt->load_bhed )
@@ -1056,6 +1050,9 @@
            face->sbit_table_type == TT_SBIT_TABLE_TYPE_SBIX ||
            face->colr                                       )
         flags |= FT_FACE_FLAG_COLOR;      /* color glyphs */
+
+      if ( face->sbit_table_type == TT_SBIT_TABLE_TYPE_SBIX )
+        flags |= FT_FACE_FLAG_SBIX;       /* has 'sbix' embedded bitmaps */
 
       if ( has_outline == TRUE )
         flags |= FT_FACE_FLAG_SCALABLE;   /* scalable outlines */
