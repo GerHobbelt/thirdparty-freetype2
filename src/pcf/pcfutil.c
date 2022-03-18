@@ -31,6 +31,7 @@ in this Software without prior written authorization from The Open Group.
 
 /* Modified for use with FreeType */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "pcfutil.h"
 
@@ -101,3 +102,5 @@ in this Software without prior written authorization from The Open Group.
 
 
 /* END */
+
+#endif

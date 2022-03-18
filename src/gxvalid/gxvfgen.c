@@ -70,8 +70,12 @@
    */
 
 
+#include <freetype/freetype.h>
+#include FT_CONFIG_STANDARD_LIBRARY_H
+
 #include <stdio.h>
 #include <string.h>
+
 
 
   /*************************************************************************/
@@ -440,8 +444,12 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  int
-  main( void )
+
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      ftype_gxvfgen_main(void)
+#endif
+
+  int main(void)
   {
     int  i;
 

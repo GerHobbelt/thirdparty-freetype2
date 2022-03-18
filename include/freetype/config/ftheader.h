@@ -117,6 +117,11 @@
 #define FT_CONFIG_CONFIG_H  <freetype/config/ftconfig.h>
 #endif
 
+#ifndef FT_LOCAL
+//#error B
+#endif
+
+
 
   /**************************************************************************
    *

@@ -15,6 +15,8 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
+
 #include <freetype/internal/ftdebug.h>
 #include <freetype/internal/ftserv.h>
 #include <freetype/internal/services/svprop.h>
@@ -348,3 +350,5 @@
 
 
 /* END */
+
+#endif

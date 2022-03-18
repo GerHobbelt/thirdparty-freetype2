@@ -15,6 +15,8 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
+
 #include "sfwoff2.h"
 #include "woff2tags.h"
 #include <freetype/tttags.h>
@@ -2348,3 +2350,5 @@
 
 
 /* END */
+
+#endif

@@ -19,6 +19,7 @@
 /* Greg Hitchcock from Microsoft has helped a lot in resolving unclear */
 /* issues; many thanks!                                                */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include <freetype/internal/ftdebug.h>
 #include <freetype/internal/ftcalc.h>
@@ -8619,3 +8620,5 @@
 
 
 /* END */
+
+#endif

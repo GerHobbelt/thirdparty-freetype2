@@ -38,6 +38,7 @@
    *
    */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include <freetype/internal/fthash.h>
 #include <freetype/internal/ftmemory.h>
@@ -336,3 +337,5 @@
 
 
 /* END */
+
+#endif

@@ -15,6 +15,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "afranges.h"
 
@@ -1070,3 +1071,5 @@
 #endif /* !AF_CONFIG_OPTION_CJK */
 
 /* END */
+
+#endif

@@ -88,6 +88,7 @@
    *
    */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
   /**************************************************************************
    *
@@ -2228,3 +2229,5 @@ typedef ptrdiff_t  FT_PtrDist;
 /* Local Variables: */
 /* coding: utf-8    */
 /* End:             */
+
+#endif

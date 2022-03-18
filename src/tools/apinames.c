@@ -21,6 +21,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#undef verbose
+
 #define  PROGRAM_NAME     "apinames"
 #define  PROGRAM_VERSION  "0.4"
 
@@ -378,9 +380,12 @@ usage( void )
 }
 
 
-int
-main( int                 argc,
-      const char* const*  argv )
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      ftype_api_names_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv)
 {
   int           from_stdin   = 0;
   int           verbose      = 0;

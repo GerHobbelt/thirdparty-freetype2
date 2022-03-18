@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include <freetype/internal/ftdebug.h>
 #include <freetype/internal/ftstream.h>
@@ -846,3 +846,5 @@ THE SOFTWARE.
 
 
 /* END */
+
+#endif

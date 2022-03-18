@@ -1,5 +1,6 @@
 #include <freetype/freetype.h>
 #include <freetype/ftbbox.h>
+#include <freetype/ftoutln.h>
 
 
 #include <time.h>    /* for clock() */
@@ -171,7 +172,11 @@
 
 #define REPEAT  1000000L
 
-  int  main( int  argc, char**  argv )
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      ftype_bbox_test_main(cnt, arr)
+#endif
+
+  int main(int argc, const char** argv)
   {
     printf( "outline #1\n" );
     profile_outline( &dummy_outline_1, REPEAT );

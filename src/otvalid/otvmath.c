@@ -17,6 +17,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "otvalid.h"
 #include "otvcommn.h"
@@ -451,3 +452,5 @@
 
 
 /* END */
+
+#endif

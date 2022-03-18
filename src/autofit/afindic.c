@@ -15,6 +15,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "aftypes.h"
 #include "aflatin.h"
@@ -150,3 +151,5 @@
 
 
 /* END */
+
+#endif

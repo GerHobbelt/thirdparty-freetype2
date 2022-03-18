@@ -23,6 +23,10 @@
 #include <freetype/internal/ftmemory.h>
 #include <freetype/internal/ftstream.h>
 #include <freetype/internal/ftdebug.h>
+#ifndef FT_LOCAL
+#error G
+#endif
+
 
 
   static int

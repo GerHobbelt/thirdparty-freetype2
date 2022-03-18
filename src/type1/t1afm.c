@@ -15,6 +15,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "t1afm.h"
 #include <freetype/internal/ftdebug.h>
@@ -412,3 +413,5 @@
 
 
 /* END */
+
+#endif

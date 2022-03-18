@@ -11,7 +11,7 @@
 /* noise LSB bits during operations, due to rounding errors..        */
 #define  THRESHOLD  64
 
-  static  error = 0;
+  static  int error = 0;
 
   static void
   test_cos( void )
@@ -240,7 +240,11 @@
   }
 
 
-  int main( void )
+#if defined(BUILD_MONOLITHIC)
+#define main(void)      ftype_trig_test_main(void)
+#endif
+
+  int main(void)
   {
     test_cos();
     test_sin();

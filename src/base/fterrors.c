@@ -15,6 +15,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include <freetype/internal/ftdebug.h>
 #include <freetype/fterrors.h>
@@ -43,3 +44,5 @@
 
     return NULL;
   }
+
+#endif

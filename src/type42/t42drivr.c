@@ -35,6 +35,7 @@
    *
    */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "t42drivr.h"
 #include "t42objs.h"
@@ -235,3 +236,5 @@
 
 
 /* END */
+
+#endif

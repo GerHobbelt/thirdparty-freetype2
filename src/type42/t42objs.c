@@ -15,6 +15,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "t42objs.h"
 #include "t42parse.h"
@@ -696,3 +697,5 @@
 
 
 /* END */
+
+#endif

@@ -15,6 +15,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include <freetype/freetype.h>
 #include <freetype/ftadvanc.h>
@@ -688,3 +689,5 @@
 
 
 /* END */
+
+#endif

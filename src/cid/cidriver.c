@@ -15,6 +15,7 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include "cidriver.h"
 #include "cidgload.h"
@@ -253,3 +254,5 @@
 
 
 /* END */
+
+#endif

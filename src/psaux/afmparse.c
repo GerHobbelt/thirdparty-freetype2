@@ -15,6 +15,8 @@
  *
  */
 
+#if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
+
 #include <freetype/freetype.h>
 #include <freetype/internal/ftdebug.h>
 #include <freetype/internal/psaux.h>
@@ -1092,3 +1094,5 @@
 
 
 /* END */
+
+#endif
