@@ -739,13 +739,13 @@
 
     contour = shape->contours;
 
-    /* If the control point coincide with any of the end point */
-    /* then it's a line and should be treated as one to avoid  */
-    /* unnecessary complexity later in the algorithm.          */
+    /* If the control point coincides with any of the end points */
+    /* then it is a line and should be treated as one to avoid   */
+    /* unnecessary complexity later in the algorithm.            */
     if ( ( contour->last_pos.x == control_1->x &&
            contour->last_pos.y == control_1->y ) ||
          ( control_1->x == to->x &&
-           control_1->y == to->y ) )
+           control_1->y == to->y )               )
     {
       sdf_line_to( to, user );
       goto Exit;
@@ -777,9 +777,9 @@
                 const FT_26D6_Vec*  to,
                 void*               user )
   {
-    SDF_Shape*    shape    = ( SDF_Shape* )user;
-    SDF_Edge*     edge     = NULL;
-    SDF_Contour*  contour  = NULL;
+    SDF_Shape*    shape   = ( SDF_Shape* )user;
+    SDF_Edge*     edge    = NULL;
+    SDF_Contour*  contour = NULL;
 
     FT_Error   error  = FT_Err_Ok;
     FT_Memory  memory = shape->memory;
@@ -1152,11 +1152,11 @@
   {
     FT_Error       error = FT_Err_Ok;
     FT_26D6_Vec    cpos[7];
-    SDF_Edge*      left,*  right;
+    SDF_Edge*      left, *right;
     const FT_26D6  threshold = ONE_PIXEL / 4;
 
 
-    if ( !memory || !out  )
+    if ( !memory || !out )
     {
       error = FT_THROW( Invalid_Argument );
       goto Exit;
@@ -1167,15 +1167,16 @@
     cpos[1] = control_points[1];
     cpos[2] = control_points[2];
     cpos[3] = control_points[3];
-    
-    /* If the segment is flat enough, we won't get any benifit by */
-    /* splitting it further, so we can just stop splitting. Here, */
-    /* we check the deviation of the bezier and stop if it is     */
-    /* lower than a pre-defined `threhold` value.                 */
+
+    /* If the segment is flat enough we won't get any benefit by */
+    /* splitting it further, so we can just stop splitting.      */
+    /*                                                           */
+    /* Check the deviation of the Bezier curve and stop if it is */
+    /* smaller than the pre-defined `threshold` value.           */
     if ( FT_ABS( 2 * cpos[0].x - 3 * cpos[1].x + cpos[3].x ) < threshold &&
-	       FT_ABS( 2 * cpos[0].y - 3 * cpos[1].y + cpos[3].y ) < threshold &&
+         FT_ABS( 2 * cpos[0].y - 3 * cpos[1].y + cpos[3].y ) < threshold &&
          FT_ABS( cpos[0].x - 3 * cpos[2].x + 2 * cpos[3].x ) < threshold &&
-	       FT_ABS( cpos[0].y - 3 * cpos[2].y + 2 * cpos[3].y ) < threshold )
+         FT_ABS( cpos[0].y - 3 * cpos[2].y + 2 * cpos[3].y ) < threshold )
     {
       split_cubic( cpos );
       goto Append;
@@ -1285,22 +1286,23 @@
             ctrls[1] = edge->control_a;
             ctrls[2] = edge->end_pos;
 
-       	    dx = FT_ABS( ctrls[2].x + ctrls[0].x - 2 * ctrls[1].x );
-       	    dy = FT_ABS( ctrls[2].y + ctrls[0].y - 2 * ctrls[1].y );
+            dx = FT_ABS( ctrls[2].x + ctrls[0].x - 2 * ctrls[1].x );
+            dy = FT_ABS( ctrls[2].y + ctrls[0].y - 2 * ctrls[1].y );
             if ( dx < dy )
-       	      dx = dy;
+              dx = dy;
 
-       	    /* Here we calculate the number of necessary bisections. Each */
-       	    /* bisection reduces the deviation by exactly 4-fold, hence   */
-       	    /* we bisect the bezier until the deviation becomes less than */
-       	    /* 1/8th of a pixel. For more details check `ftgrays.c`.      */
-       	    num_splits = 1;
-       	    while ( dx > ONE_PIXEL / 8 )
-       	    {
-       	      dx >>= 2;
-       	      num_splits <<= 1;
-       	    }
-       
+            /* Calculate the number of necessary bisections.  Each      */
+            /* bisection causes a four-fold reduction of the deviation, */
+            /* hence we bisect the Bezier curve until the deviation     */
+            /* becomes less than 1/8th of a pixel.  For more details    */
+            /* check file `ftgrays.c`.                                  */
+            num_splits = 1;
+            while ( dx > ONE_PIXEL / 8 )
+            {
+              dx         >>= 2;
+              num_splits <<= 1;
+            }
+
             error = split_sdf_conic( memory, ctrls, num_splits, &new_edges );
           }
           break;
@@ -3359,7 +3361,7 @@
             if ( dist.distance > sp_sq )
               continue;
 
-            /* square_root the values if required */
+            /* take the square root of the distance if required */
             if ( USE_SQUARED_DISTANCES )
               dist.distance = square_root( dist.distance );
 
