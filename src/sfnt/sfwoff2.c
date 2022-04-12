@@ -975,7 +975,7 @@
         /* composite glyph */
         FT_Bool    have_instructions = FALSE;
         FT_UShort  instruction_size  = 0;
-        FT_ULong   composite_size;
+        FT_ULong   composite_size    = 0;
         FT_ULong   size_needed;
         FT_Byte*   pointer           = NULL;
 
@@ -2106,7 +2106,7 @@
         error = FT_THROW( Invalid_Table );
         goto Exit;
       }
-      file_offset = ROUND4(woff2.metaOffset + woff2.metaLength);
+      file_offset = ROUND4( woff2.metaOffset + woff2.metaLength );
     }
 
     if ( woff2.privOffset )
@@ -2116,7 +2116,7 @@
         error = FT_THROW( Invalid_Table );
         goto Exit;
       }
-      file_offset = ROUND4(woff2.privOffset + woff2.privLength);
+      file_offset = ROUND4( woff2.privOffset + woff2.privLength );
     }
 
     if ( file_offset != ( ROUND4( woff2.length ) ) )
