@@ -2898,7 +2898,8 @@
       }
       else
       {
-        if ( FT_IS_SCALABLE( glyph->face ) )
+        if ( FT_IS_SCALABLE( glyph->face ) ||
+             FT_HAS_SBIX( glyph->face )    )
         {
           TT_Face  face = (TT_Face)glyph->face;
 
@@ -2910,22 +2911,30 @@
           glyph->linearHoriAdvance = loader.linear;
           glyph->linearVertAdvance = loader.vadvance;
 
-          /* bitmaps from the `sbix' table need special treatment:  */
+          /* Bitmaps from the 'sbix' table need special treatment:  */
           /* if there is a glyph contour, the bitmap origin must be */
           /* shifted to be relative to the lower left corner of the */
           /* glyph bounding box, also taking the left-side bearing  */
-          /* (or top bearing) into account                          */
+          /* (or top bearing) into account.                         */
           if ( face->sbit_table_type == TT_SBIT_TABLE_TYPE_SBIX &&
                loader.n_contours > 0                            )
           {
-            FT_Int  bitmap_left = loader.bbox.xMin;
-            FT_Int  bitmap_top  = loader.bbox.yMin;
+            FT_Int  bitmap_left;
+            FT_Int  bitmap_top;
 
 
             if ( load_flags & FT_LOAD_VERTICAL_LAYOUT )
-              bitmap_top += loader.top_bearing;
+            {
+              /* This is a guess, since Apple's CoreText engine doesn't */
+              /* really do vertical typesetting.                        */
+              bitmap_left = loader.bbox.xMin;
+              bitmap_top  = loader.top_bearing;
+            }
             else
-              bitmap_left += loader.left_bearing;
+            {
+              bitmap_left = loader.left_bearing;
+              bitmap_top  = loader.bbox.yMin;
+            }
 
             glyph->bitmap_left += FT_MulFix( bitmap_left, x_scale ) >> 6;
             glyph->bitmap_top  += FT_MulFix( bitmap_top,  y_scale ) >> 6;
