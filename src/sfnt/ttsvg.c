@@ -320,7 +320,7 @@
 #ifdef FT_CONFIG_OPTION_USE_ZLIB
 
       FT_ULong  uncomp_size;
-      FT_Byte*  uncomp_buffer;
+      FT_Byte*  uncomp_buffer = NULL;
 
 
       /*

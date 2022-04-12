@@ -1541,9 +1541,10 @@ FT_BEGIN_HEADER
    *
    * @note:
    *   For backward compatibility, a font with an 'sbix' table is treated as
-   *   a bitmap-only face.  Using @FT_Open_Face with @FT_PARAM_TAG_NO_SBIX,
-   *   an application can switch off 'sbix' handling so that the face is
-   *   treated as an ordinary outline font with scalable outlines.
+   *   a bitmap-only face.  Using @FT_Open_Face with
+   *   @FT_PARAM_TAG_IGNORE_SBIX, an application can switch off 'sbix'
+   *   handling so that the face is treated as an ordinary outline font with
+   *   scalable outlines.
    *
    *   Here is some pseudo code that roughly illustrates how to implement
    *   'sbix' handling according to the OpenType specification.
@@ -1575,7 +1576,7 @@ FT_BEGIN_HEADER
    *       error = FT_Load_Glyph( face,
    *                              glyph_index,
    *                              FT_LOAD_SBITS_ONLY          |
-   *                              FT_LOAD_BITMAP_METRICS_ONLY )
+   *                              FT_LOAD_BITMAP_METRICS_ONLY );
    *       if ( error == FT_Err_Invalid_Argument )
    *         continue;
    *       else if ( error )
@@ -4940,8 +4941,8 @@ FT_BEGIN_HEADER
    *
    */
 #define FREETYPE_MAJOR  2
-#define FREETYPE_MINOR  11
-#define FREETYPE_PATCH  1
+#define FREETYPE_MINOR  12
+#define FREETYPE_PATCH  0
 
 
   /**************************************************************************
