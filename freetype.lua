@@ -127,10 +127,13 @@ files {
   "src/sfnt/ttmtx.c",
   "src/sfnt/ttpost.c",
   "src/sfnt/ttsbit.c",
+  "src/sfnt/ttsvg.c",
   "src/sfnt/woff2tags.c",
 
   "src/smooth/ftgrays.c",
   "src/smooth/ftsmooth.c",
+
+  "src/svg/ftsvg.c",
 
   "src/truetype/ttdriver.c",
   "src/truetype/ttgload.c",
