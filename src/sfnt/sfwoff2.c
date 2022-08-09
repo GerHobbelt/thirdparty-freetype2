@@ -231,9 +231,9 @@
     {
       FT_TRACE6(( "Reallocating %lu to %lu.\n",
                   *dst_size, (*offset + size) ));
-      if ( FT_REALLOC( dst,
-                       (FT_ULong)( *dst_size ),
-                       (FT_ULong)( *offset + size ) ) )
+      if ( FT_QREALLOC( dst,
+                        (FT_ULong)( *dst_size ),
+                        (FT_ULong)( *offset + size ) ) )
         goto Exit;
 
       *dst_size = *offset + size;
@@ -786,7 +786,7 @@
       goto Fail;
 
     loca_buf_size = loca_values_size * offset_size;
-    if ( FT_QNEW_ARRAY( loca_buf, loca_buf_size ) )
+    if ( FT_QALLOC( loca_buf, loca_buf_size ) )
       goto Fail;
 
     dst = loca_buf;
@@ -865,7 +865,7 @@
     WOFF2_Point  points       = NULL;
 
 
-    if ( FT_NEW_ARRAY( substreams, num_substreams ) )
+    if ( FT_QNEW_ARRAY( substreams, num_substreams ) )
       goto Fail;
 
     if ( FT_STREAM_SKIP( 2 ) )
@@ -928,7 +928,7 @@
       offset += overlap_bitmap_length;
     }
 
-    if ( FT_NEW_ARRAY( loca_values, num_glyphs + 1 ) )
+    if ( FT_QNEW_ARRAY( loca_values, num_glyphs + 1 ) )
       goto Fail;
 
     points_size        = 0;
@@ -940,10 +940,10 @@
     substreams[BBOX_STREAM].offset += bbox_bitmap_length;
 
     glyph_buf_size = WOFF2_DEFAULT_GLYPH_BUF;
-    if ( FT_NEW_ARRAY( glyph_buf, glyph_buf_size ) )
+    if ( FT_QALLOC( glyph_buf, glyph_buf_size ) )
       goto Fail;
 
-    if ( FT_NEW_ARRAY( info->x_mins, num_glyphs ) )
+    if ( FT_QNEW_ARRAY( info->x_mins, num_glyphs ) )
       goto Fail;
 
     for ( i = 0; i < num_glyphs; ++i )
@@ -1001,7 +1001,7 @@
         size_needed = 12 + composite_size + instruction_size;
         if ( glyph_buf_size < size_needed )
         {
-          if ( FT_RENEW_ARRAY( glyph_buf, glyph_buf_size, size_needed ) )
+          if ( FT_QREALLOC( glyph_buf, glyph_buf_size, size_needed ) )
             goto Fail;
           glyph_buf_size = size_needed;
         }
@@ -1077,7 +1077,7 @@
             have_overlap = TRUE;
         }
 
-        if ( FT_NEW_ARRAY( n_points_arr, n_contours ) )
+        if ( FT_QNEW_ARRAY( n_points_arr, n_contours ) )
           goto Fail;
 
         if ( FT_STREAM_SEEK( substreams[N_POINTS_STREAM].offset ) )
@@ -1114,7 +1114,7 @@
 
         /* Create array to store point information. */
         points_size = total_n_points;
-        if ( FT_NEW_ARRAY( points, points_size ) )
+        if ( FT_QNEW_ARRAY( points, points_size ) )
           goto Fail;
 
         if ( triplet_decode( flags_buf,
@@ -1143,7 +1143,7 @@
                       instruction_size;
         if ( glyph_buf_size < size_needed )
         {
-          if ( FT_RENEW_ARRAY( glyph_buf, glyph_buf_size, size_needed ) )
+          if ( FT_QREALLOC( glyph_buf, glyph_buf_size, size_needed ) )
             goto Fail;
           glyph_buf_size = size_needed;
         }
@@ -1228,8 +1228,7 @@
       *glyf_checksum += compute_ULong_sum( glyph_buf, glyph_size );
 
       /* Store x_mins, may be required to reconstruct `hmtx'. */
-      if ( n_contours > 0 )
-        info->x_mins[i] = (FT_Short)x_min;
+      info->x_mins[i] = (FT_Short)x_min;
     }
 
     info->glyf_table->dst_length = dest_offset - info->glyf_table->dst_offset;
@@ -1346,7 +1345,7 @@
     offset_size = index_format ? 4 : 2;
 
     /* Create `x_mins' array. */
-    if ( FT_NEW_ARRAY( info->x_mins, num_glyphs ) )
+    if ( FT_QNEW_ARRAY( info->x_mins, num_glyphs ) )
       return error;
 
     loca_offset = info->loca_table->src_offset;
@@ -1434,8 +1433,8 @@
     if ( num_hmetrics < 1 )
       goto Fail;
 
-    if ( FT_NEW_ARRAY( advance_widths, num_hmetrics ) ||
-         FT_NEW_ARRAY( lsbs, num_glyphs )             )
+    if ( FT_QNEW_ARRAY( advance_widths, num_hmetrics ) ||
+         FT_QNEW_ARRAY( lsbs, num_glyphs )             )
       goto Fail;
 
     /* Read `advanceWidth' stream.  Always present. */
@@ -1486,7 +1485,7 @@
 
     /* Build the hmtx table. */
     hmtx_table_size = 2 * num_hmetrics + 2 * num_glyphs;
-    if ( FT_NEW_ARRAY( hmtx_table, hmtx_table_size ) )
+    if ( FT_QALLOC( hmtx_table, hmtx_table_size ) )
       goto Fail;
 
     dst = hmtx_table;
@@ -1543,10 +1542,10 @@
   {
     /* Memory management of `transformed_buf' is handled by the caller. */
 
-    FT_Error   error       = FT_Err_Ok;
-    FT_Stream  stream      = NULL;
-    FT_Byte*   buf_cursor  = NULL;
-    FT_Byte*   table_entry = NULL;
+    FT_Error   error      = FT_Err_Ok;
+    FT_Stream  stream     = NULL;
+    FT_Byte*   buf_cursor = NULL;
+    FT_Byte    table_entry[16];
 
     /* We are reallocating memory for `sfnt', so its pointer may change. */
     FT_Byte*   sfnt = *sfnt_bytes;
@@ -1586,10 +1585,6 @@
         return FT_THROW( Invalid_Table );
       }
     }
-
-    /* Create buffer for table entries. */
-    if ( FT_NEW_ARRAY( table_entry, 16 ) )
-      goto Fail;
 
     /* Create a stream for the uncompressed buffer. */
     if ( FT_NEW( stream ) )
@@ -1753,7 +1748,6 @@
     /* Set pointer of sfnt stream to its correct value. */
     *sfnt_bytes = sfnt;
 
-    FT_FREE( table_entry );
     FT_Stream_Close( stream );
     FT_FREE( stream );
 
@@ -1766,7 +1760,6 @@
     /* Set pointer of sfnt stream to its correct value. */
     *sfnt_bytes = sfnt;
 
-    FT_FREE( table_entry );
     FT_Stream_Close( stream );
     FT_FREE( stream );
 
@@ -1879,8 +1872,8 @@
     woff2.ttc_fonts = NULL;
 
     /* Read table directory. */
-    if ( FT_NEW_ARRAY( tables, woff2.num_tables )  ||
-         FT_NEW_ARRAY( indices, woff2.num_tables ) )
+    if ( FT_QNEW_ARRAY( tables, woff2.num_tables )  ||
+         FT_QNEW_ARRAY( indices, woff2.num_tables ) )
       goto Exit;
 
     FT_TRACE2(( "\n" ));
@@ -1951,10 +1944,11 @@
         goto Exit;
       }
 
+      table->flags      = flags;
       table->src_offset = src_offset;
       table->src_length = table->TransformLength;
       src_offset       += table->TransformLength;
-      table->flags      = flags;
+      table->dst_offset = 0;
 
       FT_TRACE2(( "  %c%c%c%c  %08d  %08d   %08ld    %08ld    %08ld\n",
                   (FT_Char)( table->Tag >> 24 ),
@@ -2012,6 +2006,7 @@
 
       FT_TRACE4(( "Number of fonts in TTC: %d\n", woff2.num_fonts ));
 
+      /* pre-zero pointers within in case of failure */
       if ( FT_NEW_ARRAY( woff2.ttc_fonts, woff2.num_fonts ) )
         goto Exit;
 
@@ -2025,7 +2020,7 @@
         if ( FT_READ_ULONG( ttc_font->flavor ) )
           goto Exit;
 
-        if ( FT_NEW_ARRAY( ttc_font->table_indices, ttc_font->num_tables ) )
+        if ( FT_QNEW_ARRAY( ttc_font->table_indices, ttc_font->num_tables ) )
           goto Exit;
 
         FT_TRACE5(( "Number of tables in font %d: %d\n",
@@ -2304,9 +2299,9 @@
     {
       FT_TRACE5(( "Trimming sfnt stream from %lu to %lu.\n",
                   sfnt_size, woff2.actual_sfnt_size ));
-      if ( FT_REALLOC( sfnt,
-                       (FT_ULong)( sfnt_size ),
-                       (FT_ULong)( woff2.actual_sfnt_size ) ) )
+      if ( FT_QREALLOC( sfnt,
+                        (FT_ULong)( sfnt_size ),
+                        (FT_ULong)( woff2.actual_sfnt_size ) ) )
         goto Exit;
     }
 
