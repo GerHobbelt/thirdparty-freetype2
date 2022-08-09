@@ -1044,7 +1044,7 @@
       AF_FaceGlobals  globals = metrics->root.globals;
       FT_UShort*      gstyles = globals->glyph_styles;
 
-      FT_Long  i;
+      FT_UInt  i;
 
 
       FT_TRACE5(( "no blue zones found:"
@@ -2204,7 +2204,7 @@
     for ( seg = segments; seg < segment_limit; seg++ )
     {
       AF_Edge  found = NULL;
-      FT_Int   ee;
+      FT_UInt  ee;
 
 
       /* ignore too short segments, too wide ones, and, in this loop, */
@@ -2278,7 +2278,7 @@
     for ( seg = segments; seg < segment_limit; seg++ )
     {
       AF_Edge  found = NULL;
-      FT_Int   ee;
+      FT_UInt  ee;
 
 
       if ( seg->dir != AF_DIR_NONE )

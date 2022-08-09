@@ -321,7 +321,7 @@
 #if 0xFFFFFFFFUL > FT_UINT_MAX
     if ( (type->flags & (FT_ULong)FT_UINT_MAX) )
       FT_TRACE1(( "FTC_ImageCache_Lookup:"
-                  " higher bits in load_flags 0x%x are dropped\n",
+                  " higher bits in load_flags 0x%lx are dropped\n",
                   (FT_ULong)type->flags & ~((FT_ULong)FT_UINT_MAX) ));
 #endif
 
@@ -519,7 +519,7 @@
 #if 0xFFFFFFFFUL > FT_UINT_MAX
     if ( (type->flags & (FT_ULong)FT_UINT_MAX) )
       FT_TRACE1(( "FTC_ImageCache_Lookup:"
-                  " higher bits in load_flags 0x%x are dropped\n",
+                  " higher bits in load_flags 0x%lx are dropped\n",
                   (FT_ULong)type->flags & ~((FT_ULong)FT_UINT_MAX) ));
 #endif
 

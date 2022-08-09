@@ -120,8 +120,8 @@
 
     if ( !ft_strcmp( property_name, "fallback-script" ) )
     {
-      FT_UInt*  fallback_script;
-      FT_UInt   ss;
+      AF_Script*  fallback_script;
+      FT_UInt     ss;
 
 
 #ifdef FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES
@@ -129,7 +129,7 @@
         return FT_THROW( Invalid_Argument );
 #endif
 
-      fallback_script = (FT_UInt*)value;
+      fallback_script = (AF_Script*)value;
 
       /* We translate the fallback script to a fallback style that uses */
       /* `fallback-script' as its script and `AF_COVERAGE_NONE' as its  */
@@ -139,8 +139,8 @@
         AF_StyleClass  style_class = af_style_classes[ss];
 
 
-        if ( (FT_UInt)style_class->script == *fallback_script &&
-             style_class->coverage == AF_COVERAGE_DEFAULT     )
+        if ( style_class->script   == *fallback_script    &&
+             style_class->coverage == AF_COVERAGE_DEFAULT )
         {
           module->fallback_style = ss;
           break;
@@ -158,7 +158,7 @@
     }
     else if ( !ft_strcmp( property_name, "default-script" ) )
     {
-      FT_UInt*  default_script;
+      AF_Script*  default_script;
 
 
 #ifdef FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES
@@ -166,7 +166,7 @@
         return FT_THROW( Invalid_Argument );
 #endif
 
-      default_script = (FT_UInt*)value;
+      default_script = (AF_Script*)value;
 
       module->default_script = *default_script;
 
@@ -292,8 +292,6 @@
   {
     FT_Error   error          = FT_Err_Ok;
     AF_Module  module         = (AF_Module)ft_module;
-    FT_UInt    fallback_style = module->fallback_style;
-    FT_UInt    default_script = module->default_script;
 
 
     if ( !ft_strcmp( property_name, "glyph-to-script-map" ) )
@@ -310,9 +308,9 @@
     }
     else if ( !ft_strcmp( property_name, "fallback-script" ) )
     {
-      FT_UInt*  val = (FT_UInt*)value;
+      AF_Script*  val = (AF_Script*)value;
 
-      AF_StyleClass  style_class = af_style_classes[fallback_style];
+      AF_StyleClass  style_class = af_style_classes[module->fallback_style];
 
 
       *val = style_class->script;
@@ -321,10 +319,10 @@
     }
     else if ( !ft_strcmp( property_name, "default-script" ) )
     {
-      FT_UInt*  val = (FT_UInt*)value;
+      AF_Script*  val = (AF_Script*)value;
 
 
-      *val = default_script;
+      *val = module->default_script;
 
       return error;
     }
