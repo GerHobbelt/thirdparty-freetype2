@@ -439,8 +439,8 @@
   }
 
 
-  static FT_Error
-  ft_var_load_item_variation_store( TT_Face          face,
+  FT_LOCAL_DEF( FT_Error )
+  tt_var_load_item_variation_store( TT_Face          face,
                                     FT_ULong         offset,
                                     GX_ItemVarStore  itemStore )
   {
@@ -466,7 +466,7 @@
 
     if ( format != 1 )
     {
-      FT_TRACE2(( "ft_var_load_item_variation_store: bad store format %d\n",
+      FT_TRACE2(( "tt_var_load_item_variation_store: bad store format %d\n",
                   format ));
       error = FT_THROW( Invalid_Table );
       goto Exit;
@@ -480,7 +480,17 @@
     /* we need at least one entry in `itemStore->varData' */
     if ( !itemStore->dataCount )
     {
-      FT_TRACE2(( "ft_var_load_item_variation_store: missing varData\n" ));
+      FT_TRACE2(( "tt_var_load_item_variation_store: missing varData\n" ));
+      error = FT_THROW( Invalid_Table );
+      goto Exit;
+    }
+
+    /* new in OpenType 1.8.4: inner & outer index equal to 0xFFFF    */
+    /* has a special meaning (i.e., no variation data for this item) */
+    if ( itemStore->dataCount == 0xFFFFU )
+    {
+      FT_TRACE2(( "ft_var_load_item_variation_store:"
+                  " dataCount too large\n" ));
       error = FT_THROW( Invalid_Table );
       goto Exit;
     }
@@ -506,7 +516,7 @@
 
     if ( itemStore->axisCount != (FT_Long)blend->mmvar->num_axis )
     {
-      FT_TRACE2(( "ft_var_load_item_variation_store:"
+      FT_TRACE2(( "tt_var_load_item_variation_store:"
                   " number of axes in item variation store\n" ));
       FT_TRACE2(( "                                 "
                   " and `fvar' table are different\n" ));
@@ -517,7 +527,7 @@
     /* new constraint in OpenType 1.8.4 */
     if ( itemStore->regionCount >= 32768U )
     {
-      FT_TRACE2(( "ft_var_load_item_variation_store:"
+      FT_TRACE2(( "tt_var_load_item_variation_store:"
                   " too many variation region tables\n" ));
       error = FT_THROW( Invalid_Table );
       goto Exit;
@@ -622,44 +632,25 @@
                          varData->regionIdxCount * varData->itemCount ) )
         goto Exit;
 
-      /* the delta set is stored as a 2-dimensional array of shorts */
-      if ( long_words )
+      for ( j = 0; j < varData->itemCount * varData->regionIdxCount; )
       {
-        /* new in OpenType 1.9, currently for 'COLR' table only;          */
-        /* the deltas are interpreted as 16.16 fixed-point scaling values */
-
-        /* not supported yet */
-
-        error = FT_THROW( Invalid_Table );
-        goto Exit;
-      }
-      else
-      {
-        for ( j = 0; j < varData->itemCount * varData->regionIdxCount; )
+        if ( long_words )
         {
           for ( k = 0; k < wordDeltaCount; k++, j++ )
-          {
-            /* read the short deltas */
-            FT_Short  delta;
-
-
-            if ( FT_READ_SHORT( delta ) )
+            if ( FT_READ_LONG( varData->deltaSet[j] ) )
               goto Exit;
-
-            varData->deltaSet[j] = delta;
-          }
-
           for ( ; k < varData->regionIdxCount; k++, j++ )
-          {
-            /* read the (signed) byte deltas */
-            FT_Char  delta;
-
-
-            if ( FT_READ_CHAR( delta ) )
+            if ( FT_READ_SHORT( varData->deltaSet[j] ) )
               goto Exit;
-
-            varData->deltaSet[j] = delta;
-          }
+        }
+        else
+        {
+          for ( k = 0; k < wordDeltaCount; k++, j++ )
+            if ( FT_READ_SHORT( varData->deltaSet[j] ) )
+              goto Exit;
+          for ( ; k < varData->regionIdxCount; k++, j++ )
+            if ( FT_READ_CHAR( varData->deltaSet[j] ) )
+              goto Exit;
         }
       }
     }
@@ -671,8 +662,8 @@
   }
 
 
-  static FT_Error
-  ft_var_load_delta_set_index_mapping( TT_Face            face,
+  FT_LOCAL_DEF( FT_Error )
+  tt_var_load_delta_set_index_mapping( TT_Face            face,
                                        FT_ULong           offset,
                                        GX_DeltaSetIdxMap  map,
                                        GX_ItemVarStore    itemStore,
@@ -729,7 +720,7 @@
     /* rough sanity check */
     if ( map->mapCount * entrySize > table_len )
     {
-      FT_TRACE1(( "ft_var_load_delta_set_index_mapping:"
+      FT_TRACE1(( "tt_var_load_delta_set_index_mapping:"
                   " invalid number of delta-set index mappings\n" ));
       error = FT_THROW( Invalid_Table );
       goto Exit;
@@ -757,6 +748,16 @@
           goto Exit;
 
         mapData = ( mapData << 8 ) | data;
+      }
+
+      /* new in OpenType 1.8.4 */
+      if ( mapData == 0xFFFFFFFFUL )
+      {
+        /* no variation data for this item */
+        map->outerIndex[i] = 0xFFFFU;
+        map->innerIndex[i] = 0xFFFFU;
+
+        continue;
       }
 
       outerIndex = mapData >> innerBitCount;
@@ -888,7 +889,7 @@
       table = blend->hvar_table;
     }
 
-    error = ft_var_load_item_variation_store(
+    error = tt_var_load_item_variation_store(
               face,
               table_offset + store_offset,
               &table->itemStore );
@@ -897,7 +898,7 @@
 
     if ( widthMap_offset )
     {
-      error = ft_var_load_delta_set_index_mapping(
+      error = tt_var_load_delta_set_index_mapping(
                 face,
                 table_offset + widthMap_offset,
                 &table->widthMap,
@@ -939,20 +940,24 @@
   }
 
 
-  static FT_Int
-  ft_var_get_item_delta( TT_Face          face,
+  FT_LOCAL_DEF( FT_Int )
+  tt_var_get_item_delta( TT_Face          face,
                          GX_ItemVarStore  itemStore,
                          FT_UInt          outerIndex,
                          FT_UInt          innerIndex )
   {
-    GX_ItemVarData  varData;
-    FT_Short*       deltaSet;
+    GX_ItemVarData    varData;
+    FT_ItemVarDelta*  deltaSet;
 
     FT_UInt   master, j;
     FT_Fixed  netAdjustment = 0;     /* accumulated adjustment */
     FT_Fixed  scaledDelta;
     FT_Fixed  delta;
 
+    /* OpenType 1.8.4+: No variation data for this item
+     *  as indices have special value 0xFFFF. */
+    if (outerIndex == 0xFFFF && innerIndex == 0xFFFF)
+      return 0;
 
     /* See pseudo code from `Font Variations Overview' */
     /* in the OpenType specification.                  */
@@ -1129,19 +1134,21 @@
       }
     }
 
-    delta = ft_var_get_item_delta( face,
+    delta = tt_var_get_item_delta( face,
                                    &table->itemStore,
                                    outerIndex,
                                    innerIndex );
 
-    FT_TRACE5(( "%s value %d adjusted by %d unit%s (%s)\n",
-                vertical ? "vertical height" : "horizontal width",
-                *avalue,
-                delta,
-                delta == 1 ? "" : "s",
-                vertical ? "VVAR" : "HVAR" ));
+    if ( delta ) {
+      FT_TRACE5(( "%s value %d adjusted by %d unit%s (%s)\n",
+                  vertical ? "vertical height" : "horizontal width",
+                  *avalue,
+                  delta,
+                  delta == 1 ? "" : "s",
+                  vertical ? "VVAR" : "HVAR" ));
 
-    *avalue += delta;
+      *avalue += delta;
+    }
 
   Exit:
     return error;
@@ -1308,7 +1315,7 @@
 
     records_offset = FT_STREAM_POS();
 
-    error = ft_var_load_item_variation_store(
+    error = tt_var_load_item_variation_store(
               face,
               table_offset + store_offset,
               &blend->mvar_table->itemStore );
@@ -1332,6 +1339,13 @@
       value->tag        = FT_GET_ULONG();
       value->outerIndex = FT_GET_USHORT();
       value->innerIndex = FT_GET_USHORT();
+
+      /* new in OpenType 1.8.4 */
+      if ( value->outerIndex == 0xFFFFU && value->innerIndex == 0xFFFFU )
+      {
+        /* no variation data for this item */
+        continue;
+      }
 
       if ( value->outerIndex >= itemStore->dataCount                  ||
            value->innerIndex >= itemStore->varData[value->outerIndex]
@@ -1423,12 +1437,12 @@
       FT_Int     delta;
 
 
-      delta = ft_var_get_item_delta( face,
+      delta = tt_var_get_item_delta( face,
                                      &blend->mvar_table->itemStore,
                                      value->outerIndex,
                                      value->innerIndex );
 
-      if ( p )
+      if ( p && delta )
       {
         FT_TRACE5(( "value %c%c%c%c (%d unit%s) adjusted by %d unit%s (MVAR)\n",
                     (FT_Char)( value->tag >> 24 ),
@@ -4306,8 +4320,8 @@
   }
 
 
-  static void
-  ft_var_done_item_variation_store( TT_Face          face,
+  FT_LOCAL_DEF( void )
+  tt_var_done_item_variation_store( TT_Face          face,
                                     GX_ItemVarStore  itemStore )
   {
     FT_Memory  memory = FT_FACE_MEMORY( face );
@@ -4332,6 +4346,18 @@
 
       FT_FREE( itemStore->varRegionList );
     }
+  }
+
+
+  FT_LOCAL_DEF( void )
+  tt_var_done_delta_set_index_map( TT_Face            face,
+                                   GX_DeltaSetIdxMap  deltaSetIdxMap )
+  {
+    FT_Memory  memory = FT_FACE_MEMORY( face );
+
+
+    FT_FREE( deltaSetIdxMap->innerIndex );
+    FT_FREE( deltaSetIdxMap->outerIndex );
   }
 
 
@@ -4372,27 +4398,27 @@
 
       if ( blend->hvar_table )
       {
-        ft_var_done_item_variation_store( face,
+        tt_var_done_item_variation_store( face,
                                           &blend->hvar_table->itemStore );
 
-        FT_FREE( blend->hvar_table->widthMap.innerIndex );
-        FT_FREE( blend->hvar_table->widthMap.outerIndex );
+        tt_var_done_delta_set_index_map( face,
+                                         &blend->hvar_table->widthMap );
         FT_FREE( blend->hvar_table );
       }
 
       if ( blend->vvar_table )
       {
-        ft_var_done_item_variation_store( face,
+        tt_var_done_item_variation_store( face,
                                           &blend->vvar_table->itemStore );
 
-        FT_FREE( blend->vvar_table->widthMap.innerIndex );
-        FT_FREE( blend->vvar_table->widthMap.outerIndex );
+        tt_var_done_delta_set_index_map( face,
+                                         &blend->vvar_table->widthMap );
         FT_FREE( blend->vvar_table );
       }
 
       if ( blend->mvar_table )
       {
-        ft_var_done_item_variation_store( face,
+        tt_var_done_item_variation_store( face,
                                           &blend->mvar_table->itemStore );
 
         FT_FREE( blend->mvar_table->values );

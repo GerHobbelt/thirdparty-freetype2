@@ -333,6 +333,6 @@ do-dist: distclean refdoc
 	rm -f docs/mkdocs.yml
 
 	@# Remove more stuff related to git.
-	rm -rf subprojects
+	rm -rf subprojects/dlg
 
 # EOF
