@@ -2216,7 +2216,8 @@
     if ( FT_QALLOC( sfnt_data, rlen ) )
       return error;
     error = FT_Stream_Read( stream, (FT_Byte *)sfnt_data, (FT_ULong)rlen );
-    if ( error ) {
+    if ( error )
+    {
       FT_FREE( sfnt_data );
       goto Exit;
     }
