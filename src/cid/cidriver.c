@@ -1,50 +1,46 @@
-/****************************************************************************
- *
- * cidriver.c
- *
- *   CID driver interface (body).
- *
- * Copyright (C) 1996-2022 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  cidriver.c                                                             */
+/*                                                                         */
+/*    CID driver interface (body).                                         */
+/*                                                                         */
+/*  Copyright 1996-2016 by                                                 */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
+#include <ft2build.h>
 #include "cidriver.h"
 #include "cidgload.h"
-#include <freetype/internal/ftdebug.h>
-#include <freetype/internal/ftpsprop.h>
+#include FT_INTERNAL_DEBUG_H
 
 #include "ciderrs.h"
 
-#include <freetype/internal/services/svpostnm.h>
-#include <freetype/internal/services/svfntfmt.h>
-#include <freetype/internal/services/svpsinfo.h>
-#include <freetype/internal/services/svcid.h>
-#include <freetype/internal/services/svprop.h>
-#include <freetype/ftdriver.h>
-
-#include <freetype/internal/psaux.h>
+#include FT_SERVICE_POSTSCRIPT_NAME_H
+#include FT_SERVICE_FONT_FORMAT_H
+#include FT_SERVICE_POSTSCRIPT_INFO_H
+#include FT_SERVICE_CID_H
 
 
-  /**************************************************************************
-   *
-   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
-   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
-   * messages during execution.
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  ciddriver
+#define FT_COMPONENT  trace_ciddriver
 
 
   /*
-   * POSTSCRIPT NAME SERVICE
+   *  POSTSCRIPT NAME SERVICE
    *
    */
 
@@ -68,7 +64,7 @@
 
 
   /*
-   * POSTSCRIPT INFO SERVICE
+   *  POSTSCRIPT INFO SERVICE
    *
    */
 
@@ -104,7 +100,7 @@
 
 
   /*
-   * CID INFO SERVICE
+   *  CID INFO SERVICE
    *
    */
   static FT_Error
@@ -172,19 +168,7 @@
 
 
   /*
-   * PROPERTY SERVICE
-   *
-   */
-
-  FT_DEFINE_SERVICE_PROPERTIESREC(
-    cid_service_properties,
-
-    (FT_Properties_SetFunc)ps_property_set,      /* set_property */
-    (FT_Properties_GetFunc)ps_property_get )     /* get_property */
-
-
-  /*
-   * SERVICE LIST
+   *  SERVICE LIST
    *
    */
 
@@ -194,7 +178,6 @@
     { FT_SERVICE_ID_POSTSCRIPT_FONT_NAME, &cid_service_ps_name },
     { FT_SERVICE_ID_POSTSCRIPT_INFO,      &cid_service_ps_info },
     { FT_SERVICE_ID_CID,                  &cid_service_cid_info },
-    { FT_SERVICE_ID_PROPERTIES,           &cid_service_properties },
     { NULL, NULL }
   };
 
@@ -217,7 +200,7 @@
       FT_MODULE_FONT_DRIVER       |
       FT_MODULE_DRIVER_SCALABLE   |
       FT_MODULE_DRIVER_HAS_HINTER,
-      sizeof ( PS_DriverRec ),
+      sizeof ( FT_DriverRec ),
 
       "t1cid",   /* module name           */
       0x10000L,  /* version 1.0 of driver */

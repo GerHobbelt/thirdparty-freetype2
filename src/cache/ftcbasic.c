@@ -1,24 +1,25 @@
-/****************************************************************************
- *
- * ftcbasic.c
- *
- *   The FreeType basic cache interface (body).
- *
- * Copyright (C) 2003-2022 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  ftcbasic.c                                                             */
+/*                                                                         */
+/*    The FreeType basic cache interface (body).                           */
+/*                                                                         */
+/*  Copyright 2003-2016 by                                                 */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/ftdebug.h>
-#include <freetype/ftcache.h>
+#include <ft2build.h>
+#include FT_INTERNAL_OBJECTS_H
+#include FT_INTERNAL_DEBUG_H
+#include FT_CACHE_H
 #include "ftcglyph.h"
 #include "ftcimage.h"
 #include "ftcsbits.h"
@@ -26,12 +27,11 @@
 #include "ftccback.h"
 #include "ftcerror.h"
 
-#undef  FT_COMPONENT
-#define FT_COMPONENT  cache
+#define FT_COMPONENT  trace_cache
 
 
   /*
-   * Basic Families
+   *  Basic Families
    *
    */
   typedef struct  FTC_BasicAttrRec_
@@ -109,16 +109,10 @@
     if ( error || !face )
       return result;
 
-#ifdef FT_DEBUG_LEVEL_TRACE
     if ( (FT_ULong)face->num_glyphs > FT_UINT_MAX || 0 > face->num_glyphs )
-    {
       FT_TRACE1(( "ftc_basic_family_get_count:"
-                  " the number of glyphs in this face is %ld,\n",
+                  " too large number of glyphs in this face, truncated\n",
                   face->num_glyphs ));
-      FT_TRACE1(( "                           "
-                  " which is too much and thus truncated\n" ));
-    }
-#endif
 
     if ( !error )
       result = (FT_UInt)face->num_glyphs;
@@ -183,8 +177,7 @@
       if ( !error )
       {
         if ( face->glyph->format == FT_GLYPH_FORMAT_BITMAP  ||
-             face->glyph->format == FT_GLYPH_FORMAT_OUTLINE ||
-             face->glyph->format == FT_GLYPH_FORMAT_SVG     )
+             face->glyph->format == FT_GLYPH_FORMAT_OUTLINE )
         {
           /* ok, copy it */
           FT_Glyph  glyph;
@@ -311,18 +304,10 @@
     if ( anode )
       *anode  = NULL;
 
-    /*
-     * Internal `FTC_BasicAttr->load_flags' is of type `FT_UInt',
-     * but public `FT_ImageType->flags' is of type `FT_Int32'.
-     *
-     * On 16bit systems, higher bits of type->flags cannot be handled.
-     */
-#if 0xFFFFFFFFUL > FT_UINT_MAX
-    if ( (type->flags & (FT_ULong)FT_UINT_MAX) )
+    if ( (FT_ULong)( type->flags - FT_INT_MIN ) > FT_UINT_MAX )
       FT_TRACE1(( "FTC_ImageCache_Lookup:"
-                  " higher bits in load_flags 0x%lx are dropped\n",
+                  " higher bits in load_flags 0x%x are dropped\n",
                   (FT_ULong)type->flags & ~((FT_ULong)FT_UINT_MAX) ));
-#endif
 
     query.attrs.scaler.face_id = type->face_id;
     query.attrs.scaler.width   = type->width;
@@ -392,18 +377,11 @@
     if ( anode )
       *anode  = NULL;
 
-    /*
-     * Internal `FTC_BasicAttr->load_flags' is of type `FT_UInt',
-     * but public `FT_Face->face_flags' is of type `FT_Long'.
-     *
-     * On long > int systems, higher bits of load_flags cannot be handled.
-     */
-#if FT_ULONG_MAX > FT_UINT_MAX
+    /* `FT_Load_Glyph' and `FT_Load_Char' take FT_UInt flags */
     if ( load_flags > FT_UINT_MAX )
       FT_TRACE1(( "FTC_ImageCache_LookupScaler:"
-                  " higher bits in load_flags 0x%lx are dropped\n",
+                  " higher bits in load_flags 0x%x are dropped\n",
                   load_flags & ~((FT_ULong)FT_UINT_MAX) ));
-#endif
 
     query.attrs.scaler     = scaler[0];
     query.attrs.load_flags = (FT_UInt)load_flags;
@@ -509,18 +487,10 @@
 
     *ansbit = NULL;
 
-    /*
-     * Internal `FTC_BasicAttr->load_flags' is of type `FT_UInt',
-     * but public `FT_ImageType->flags' is of type `FT_Int32'.
-     *
-     * On 16bit systems, higher bits of type->flags cannot be handled.
-     */
-#if 0xFFFFFFFFUL > FT_UINT_MAX
-    if ( (type->flags & (FT_ULong)FT_UINT_MAX) )
+    if ( (FT_ULong)( type->flags - FT_INT_MIN ) > FT_UINT_MAX )
       FT_TRACE1(( "FTC_ImageCache_Lookup:"
-                  " higher bits in load_flags 0x%lx are dropped\n",
+                  " higher bits in load_flags 0x%x are dropped\n",
                   (FT_ULong)type->flags & ~((FT_ULong)FT_UINT_MAX) ));
-#endif
 
     query.attrs.scaler.face_id = type->face_id;
     query.attrs.scaler.width   = type->width;
@@ -592,18 +562,11 @@
 
     *ansbit = NULL;
 
-    /*
-     * Internal `FTC_BasicAttr->load_flags' is of type `FT_UInt',
-     * but public `FT_Face->face_flags' is of type `FT_Long'.
-     *
-     * On long > int systems, higher bits of load_flags cannot be handled.
-     */
-#if FT_ULONG_MAX > FT_UINT_MAX
+    /* `FT_Load_Glyph' and `FT_Load_Char' take FT_UInt flags */
     if ( load_flags > FT_UINT_MAX )
       FT_TRACE1(( "FTC_ImageCache_LookupScaler:"
-                  " higher bits in load_flags 0x%lx are dropped\n",
+                  " higher bits in load_flags 0x%x are dropped\n",
                   load_flags & ~((FT_ULong)FT_UINT_MAX) ));
-#endif
 
     query.attrs.scaler     = scaler[0];
     query.attrs.load_flags = (FT_UInt)load_flags;
