@@ -59,7 +59,7 @@
 #define MAC_NAME( x )  (FT_String*)psnames->macintosh_name( (FT_UInt)(x) )
 
 
-#else /* FT_CONFIG_OPTION_POSTSCRIPT_NAMES */
+#else /* !FT_CONFIG_OPTION_POSTSCRIPT_NAMES */
 
 
    /* Otherwise, we ignore the `psnames' module, and provide our own  */
@@ -153,7 +153,7 @@
   };
 
 
-#endif /* FT_CONFIG_OPTION_POSTSCRIPT_NAMES */
+#endif /* !FT_CONFIG_OPTION_POSTSCRIPT_NAMES */
 
 
   static FT_Error
