@@ -24,7 +24,7 @@
 #
 
 project('freetype2', 'c',
-  meson_version: '>= 0.55.0',
+  meson_version: '>= 0.56.0',
   version: run_command('builds/meson/extract_freetype_version.py',
                        'include/freetype/freetype.h',
                        check: true).stdout().strip(),
@@ -304,7 +304,8 @@ elif zlib_option == 'external'
   ft2_deps += [zlib_dep]
 elif zlib_option == 'system'
   zlib_dep = dependency('zlib',
-    required: true)
+    required: true,
+    static: true)
   assert(zlib_dep.found(), 'Could not find system zlib installation!')
   ftoption_command += [
     '--enable=FT_CONFIG_OPTION_USE_ZLIB',
@@ -328,7 +329,8 @@ endif
 # PNG support
 libpng_dep = dependency('libpng',
   required: get_option('png'),
-  fallback: 'libpng')
+  fallback: 'libpng',
+  static: true)
 
 if libpng_dep.found()
   ftoption_command += ['--enable=FT_CONFIG_OPTION_USE_PNG']
@@ -336,10 +338,22 @@ if libpng_dep.found()
 endif
 
 # Harfbuzz support
-harfbuzz_dep = dependency('harfbuzz',
-  version: '>= 2.0.0',
-  required: get_option('harfbuzz'),
-  default_options: ['freetype=disabled'])
+if meson.current_build_dir().contains('subprojects')
+  # LWJGL: Not used in this case, first freetype is built without harfbuzz
+  harfbuzz_dep = dependency('harfbuzz',
+    version: '>= 2.0.0',
+    required: get_option('harfbuzz'),
+    static: true,
+    default_options: ['freetype=disabled', 'tests=disabled', 'benchmark=disabled', 'docs=disabled']
+  )
+else
+  # LWJGL: This is a workaround to create an "internal" meson dependency, which is the only one
+  #        that supports as_link_whole. We need that to keep all HarfBuzz functions.
+  harfbuzz_project = subproject('harfbuzz',
+      required: true,
+      default_options: ['default_library=static', 'freetype=enabled', 'tests=disabled', 'benchmark=disabled', 'docs=disabled'])
+  harfbuzz_dep = harfbuzz_project.get_variable('libharfbuzz_dep').as_link_whole()
+endif
 
 if harfbuzz_dep.found()
   ftoption_command += ['--enable=FT_CONFIG_OPTION_USE_HARFBUZZ']
@@ -413,7 +427,7 @@ freetype_dep = declare_dependency(
   link_with: ft2_lib,
   version: ft2_pkgconfig_version)
 
-meson.override_dependency('freetype2', freetype_dep)
+#meson.override_dependency('freetype2', freetype_dep)
 
 
 # NOTE: Using both `install_dir` and `subdir` doesn't seem to work below,
