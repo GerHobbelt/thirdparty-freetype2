@@ -40,6 +40,8 @@
    *
    */
 
+// MSVC compiles the builds/windows/win_ftsystem.c equivalent file instead.
+#if !defined(_MSC_VER)
 
 #include <freetype/freetype.h>
 #include <freetype/ftlogging.h>
@@ -642,3 +644,5 @@
 
 
 /* END */
+
+#endif

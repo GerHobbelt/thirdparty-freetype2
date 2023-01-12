@@ -3,6 +3,9 @@
 #include <freetype/freetype.h>
 #include <ft2build.h>
 
+#if defined(BUILD_MONOLITHIC)
+#define main		ft_test_issue_1063_main
+#endif
 
 int
 main( void )

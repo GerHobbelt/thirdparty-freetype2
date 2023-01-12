@@ -24,6 +24,8 @@
    *
    */
 
+// MSVC compiles the builds/windows/win_ftsystem.c equivalent file instead.
+#if !defined(_MSC_VER)
 
 #include <ft2build.h>
 #include FT_CONFIG_CONFIG_H
@@ -331,3 +333,5 @@
 
 
 /* END */
+
+#endif

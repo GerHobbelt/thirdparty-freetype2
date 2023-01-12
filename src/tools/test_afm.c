@@ -107,8 +107,12 @@
   }
 
 
+#if defined(BUILD_MONOLITHIC)
+#define main		ftype_test_afm_main
+#endif
+
   int main( int    argc,
-            char** argv )
+            const char** argv )
   {
     FT_Library       library;
     FT_StreamRec     stream;

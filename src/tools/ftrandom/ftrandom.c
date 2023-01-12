@@ -38,8 +38,12 @@
 #include <strings.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if !defined(_WIN32)
 #include <sys/wait.h>
 #include <unistd.h>
+#else
+#include <io.h>
+#endif
 #include <dirent.h>
 #include <signal.h>
 #include <time.h>
@@ -56,17 +60,17 @@
   static int    check_outlines = false;
   static int    nohints        = false;
   static int    rasterize      = false;
-  static char*  results_dir    = "results";
+  static const char*  results_dir    = "results";
 
 #define GOOD_FONTS_DIR  "/usr/local/share/fonts"
 
-  static char*  default_dir_list[] =
+  static const char*  default_dir_list[] =
   {
     GOOD_FONTS_DIR,
     NULL
   };
 
-  static char*  default_ext_list[] =
+  static const char*  default_ext_list[] =
   {
     "ttf",
     "otf",
@@ -197,7 +201,7 @@
 
 
   static void
-  ExecuteTest( char*  testfont )
+  ExecuteTest( const char*  testfont )
   {
     FT_Library  context;
     FT_Face     face;
@@ -345,8 +349,8 @@
 
 
   static void
-  FindFonts( char**  fontdirs,
-             char**  extensions )
+  FindFonts( const char**  fontdirs,
+             const char**  extensions )
   {
     int           i;
     unsigned int  max;
@@ -534,7 +538,6 @@
       {
         int  status;
 
-
         waitpid( child_pid, &status, 0 );
         alarm( 0 );
         if ( WIFSIGNALED ( status ) )
@@ -554,10 +557,10 @@
 
   static void
   usage( FILE*  out,
-         char*  name )
+         const char*  name )
   {
-    char**  d = default_dir_list;
-    char**  e = default_ext_list;
+    const char**  d = default_dir_list;
+    const char**  e = default_ext_list;
 
 
     fprintf( out, "%s [options] -- Generate random erroneous fonts\n"
@@ -595,25 +598,28 @@
   }
 
 
+#if defined(BUILD_MONOLITHIC)
+#define main		ftype_ftrandom_main
+#endif
+
   int
   main( int     argc,
-        char**  argv )
+        const char**  argv )
   {
-    char    **dirs, **exts;
+    const char    **dirs, **exts;
     int     dcnt = 0, ecnt = 0, rset = false, allexts = false;
     int     i;
     time_t  now;
-    char*   testfile = NULL;
+    const char*   testfile = NULL;
 
 
-    dirs = calloc( (size_t)( argc + 1 ), sizeof ( char ** ) );
-    exts = calloc( (size_t)( argc + 1 ), sizeof ( char ** ) );
+    dirs = calloc( (size_t)( argc + 1 ), sizeof ( dirs[0] ));
+    exts = calloc( (size_t)( argc + 1 ), sizeof ( exts[0] ));
 
     for ( i = 1; i < argc; i++ )
     {
-      char*  pt = argv[i];
-      char*  end;
-
+      const char*  pt = argv[i];
+      const char*  end;
 
       if ( pt[0] == '-' && pt[1] == '-' )
         pt++;
