@@ -1528,9 +1528,8 @@
   static void
   Modify_CVT_Check( TT_ExecContext  exc )
   {
-    /* TT_RunIns sets origCvt and restores cvt to origCvt when done. */
     if ( exc->iniRange == tt_coderange_glyph &&
-         exc->cvt == exc->origCvt            )
+         exc->cvt != exc->glyfCvt            )
     {
       exc->error = Update_Max( exc->memory,
                                &exc->glyfCvtSize,
@@ -3116,10 +3115,8 @@
     }
     else
     {
-      /* TT_RunIns sets origStorage and restores storage to origStorage */
-      /* when done.                                                     */
       if ( exc->iniRange == tt_coderange_glyph &&
-           exc->storage == exc->origStorage    )
+           exc->storage != exc->glyfStorage    )
       {
         FT_ULong  tmp = (FT_ULong)exc->glyfStoreSize;
 
@@ -7833,8 +7830,6 @@
       exc->func_move_cvt  = Move_CVT;
     }
 
-    exc->origCvt     = exc->cvt;
-    exc->origStorage = exc->storage;
     exc->iniRange    = exc->curRange;
 
     Compute_Funcs( exc );
@@ -8595,9 +8590,6 @@
                 ins_counter,
                 ins_counter == 1 ? "" : "s" ));
 
-    exc->cvt     = exc->origCvt;
-    exc->storage = exc->origStorage;
-
     return FT_Err_Ok;
 
   LErrorCodeOverflow_:
@@ -8606,9 +8598,6 @@
   LErrorLabel_:
     if ( exc->error && !exc->instruction_trap )
       FT_TRACE1(( "  The interpreter returned error 0x%x\n", exc->error ));
-
-    exc->cvt     = exc->origCvt;
-    exc->storage = exc->origStorage;
 
     return exc->error;
   }
