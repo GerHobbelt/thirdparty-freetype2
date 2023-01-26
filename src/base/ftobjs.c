@@ -4,7 +4,7 @@
  *
  *   The FreeType private base classes (body).
  *
- * Copyright (C) 1996-2022 by
+ * Copyright (C) 1996-2023 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -1673,13 +1673,13 @@
   static void
   memory_stream_close( FT_Stream  stream )
   {
-    FT_Memory  memory = stream->memory;
+    FT_Memory  memory = (FT_Memory)stream->descriptor.pointer;
 
 
     FT_FREE( stream->base );
-
     stream->size  = 0;
     stream->close = NULL;
+    FT_FREE( stream );
   }
 
 
@@ -1710,7 +1710,8 @@
 
     FT_Stream_OpenMemory( stream, base, size );
 
-    stream->close = close;
+    stream->descriptor.pointer = memory;
+    stream->close              = close;
 
     *astream = stream;
 
@@ -1731,28 +1732,36 @@
   {
     FT_Open_Args  args;
     FT_Error      error;
-    FT_Stream     stream = NULL;
     FT_Memory     memory = library->memory;
 
 
+    args.flags = 0;
+
+    if ( driver_name )
+    {
+      args.driver = FT_Get_Module( library, driver_name );
+      if ( !args.driver )
+      {
+        FT_FREE( base );
+        return FT_THROW( Missing_Module );
+      }
+
+      args.flags = args.flags | FT_OPEN_DRIVER;
+    }
+
+    /* `memory_stream_close` also frees the stream object. */
     error = new_memory_stream( library,
                                base,
                                size,
                                memory_stream_close,
-                               &stream );
+                               &args.stream );
     if ( error )
     {
       FT_FREE( base );
       return error;
     }
 
-    args.flags  = FT_OPEN_STREAM;
-    args.stream = stream;
-    if ( driver_name )
-    {
-      args.flags  = args.flags | FT_OPEN_DRIVER;
-      args.driver = FT_Get_Module( library, driver_name );
-    }
+    args.flags |= FT_OPEN_STREAM;
 
 #ifdef FT_MACINTOSH
     /* At this point, the face index has served its purpose;  */
@@ -1764,21 +1773,7 @@
       face_index &= 0x7FFF0000L; /* retain GX data */
 #endif
 
-    error = ft_open_face_internal( library, &args, face_index, aface, 0 );
-
-    if ( !error )
-      (*aface)->face_flags &= ~FT_FACE_FLAG_EXTERNAL_STREAM;
-    else
-#ifdef FT_MACINTOSH
-      FT_Stream_Free( stream, 0 );
-#else
-    {
-      FT_Stream_Close( stream );
-      FT_FREE( stream );
-    }
-#endif
-
-    return error;
+    return ft_open_face_internal( library, &args, face_index, aface, 0 );
   }
 
 
@@ -1921,7 +1916,7 @@
                                    sfnt_ps,
                                    length,
                                    FT_MIN( face_index, 0 ),
-                                   is_sfnt_cid ? "cid" : "type1",
+                                   is_sfnt_cid ? "t1cid" : "type1",
                                    aface );
   Exit:
     {
@@ -2558,7 +2553,7 @@
 
     /* test for valid `library' delayed to `FT_Stream_New' */
 
-    if ( ( !aface && face_index >= 0 ) || !args )
+    if ( !args )
       return FT_THROW( Invalid_Argument );
 
     external_stream = FT_BOOL( ( args->flags & FT_OPEN_STREAM ) &&
@@ -2568,6 +2563,14 @@
     error = FT_Stream_New( library, args, &stream );
     if ( error )
       goto Fail3;
+
+    /* Do this error check after `FT_Stream_New` to ensure that the */
+    /* 'close' callback is called.                                  */
+    if ( !aface && face_index >= 0 )
+    {
+      error = FT_THROW( Invalid_Argument );
+      goto Fail3;
+    }
 
     memory = library->memory;
 

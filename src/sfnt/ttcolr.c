@@ -4,7 +4,7 @@
  *
  *   TrueType and OpenType colored glyph layer support (body).
  *
- * Copyright (C) 2018-2022 by
+ * Copyright (C) 2018-2023 by
  * David Turner, Robert Wilhelm, Dominik Röttsches, and Werner Lemberg.
  *
  * Originally written by Shao Yu Zhang <shaozhang@fb.com>.
@@ -191,7 +191,7 @@
 #endif
 
     if ( table_size < COLRV0_HEADER_SIZE )
-      goto InvalidTable;
+      goto NoColr;
 
     if ( FT_FRAME_EXTRACT( table_size, table ) )
       goto NoColr;
