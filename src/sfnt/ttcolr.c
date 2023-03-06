@@ -1915,7 +1915,7 @@
 #else /* !TT_CONFIG_OPTION_COLOR_LAYERS */
 
   /* ANSI C doesn't like empty source files */
-  typedef int  _tt_colr_dummy;
+  typedef int  tt_colr_dummy_;
 
 #endif /* !TT_CONFIG_OPTION_COLOR_LAYERS */
 

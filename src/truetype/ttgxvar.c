@@ -4566,7 +4566,7 @@
 #else /* !TT_CONFIG_OPTION_GX_VAR_SUPPORT */
 
   /* ANSI C doesn't like empty source files */
-  typedef int  _tt_gxvar_dummy;
+  typedef int  tt_gxvar_dummy_;
 
 #endif /* !TT_CONFIG_OPTION_GX_VAR_SUPPORT */
 
