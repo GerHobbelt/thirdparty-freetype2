@@ -131,7 +131,7 @@
       }
 
       FT_TRACE5(( "  move to (%.2f, %.2f)\n",
-                  v_start.x / 64.0, v_start.y / 64.0 ));
+                  (double)v_start.x / 64, (double)v_start.y / 64 ));
       error = func_interface->move_to( &v_start, user );
       if ( error )
         goto Exit;
@@ -153,7 +153,7 @@
             vec.y = SCALED( point->y );
 
             FT_TRACE5(( "  line to (%.2f, %.2f)\n",
-                        vec.x / 64.0, vec.y / 64.0 ));
+                        (double)vec.x / 64, (double)vec.y / 64 ));
             error = func_interface->line_to( &vec, user );
             if ( error )
               goto Exit;
@@ -182,8 +182,10 @@
             {
               FT_TRACE5(( "  conic to (%.2f, %.2f)"
                           " with control (%.2f, %.2f)\n",
-                          vec.x / 64.0, vec.y / 64.0,
-                          v_control.x / 64.0, v_control.y / 64.0 ));
+                          (double)vec.x / 64,
+                          (double)vec.y / 64,
+                          (double)v_control.x / 64,
+                          (double)v_control.y / 64 ));
               error = func_interface->conic_to( &v_control, &vec, user );
               if ( error )
                 goto Exit;
@@ -198,8 +200,10 @@
 
             FT_TRACE5(( "  conic to (%.2f, %.2f)"
                         " with control (%.2f, %.2f)\n",
-                        v_middle.x / 64.0, v_middle.y / 64.0,
-                        v_control.x / 64.0, v_control.y / 64.0 ));
+                        (double)v_middle.x / 64,
+                        (double)v_middle.y / 64,
+                        (double)v_control.x / 64,
+                        (double)v_control.y / 64 ));
             error = func_interface->conic_to( &v_control, &v_middle, user );
             if ( error )
               goto Exit;
@@ -210,8 +214,10 @@
 
           FT_TRACE5(( "  conic to (%.2f, %.2f)"
                       " with control (%.2f, %.2f)\n",
-                      v_start.x / 64.0, v_start.y / 64.0,
-                      v_control.x / 64.0, v_control.y / 64.0 ));
+                      (double)v_start.x / 64,
+                      (double)v_start.y / 64,
+                      (double)v_control.x / 64,
+                      (double)v_control.y / 64 ));
           error = func_interface->conic_to( &v_control, &v_start, user );
           goto Close;
 
@@ -243,9 +249,12 @@
 
               FT_TRACE5(( "  cubic to (%.2f, %.2f)"
                           " with controls (%.2f, %.2f) and (%.2f, %.2f)\n",
-                          vec.x / 64.0, vec.y / 64.0,
-                          vec1.x / 64.0, vec1.y / 64.0,
-                          vec2.x / 64.0, vec2.y / 64.0 ));
+                          (double)vec.x / 64,
+                          (double)vec.y / 64,
+                          (double)vec1.x / 64,
+                          (double)vec1.y / 64,
+                          (double)vec2.x / 64,
+                          (double)vec2.y / 64 ));
               error = func_interface->cubic_to( &vec1, &vec2, &vec, user );
               if ( error )
                 goto Exit;
@@ -254,9 +263,12 @@
 
             FT_TRACE5(( "  cubic to (%.2f, %.2f)"
                         " with controls (%.2f, %.2f) and (%.2f, %.2f)\n",
-                        v_start.x / 64.0, v_start.y / 64.0,
-                        vec1.x / 64.0, vec1.y / 64.0,
-                        vec2.x / 64.0, vec2.y / 64.0 ));
+                        (double)v_start.x / 64,
+                        (double)v_start.y / 64,
+                        (double)vec1.x / 64,
+                        (double)vec1.y / 64,
+                        (double)vec2.x / 64,
+                        (double)vec2.y / 64 ));
             error = func_interface->cubic_to( &vec1, &vec2, &v_start, user );
             goto Close;
           }
@@ -265,7 +277,7 @@
 
       /* close the contour with a line segment */
       FT_TRACE5(( "  line to (%.2f, %.2f)\n",
-                  v_start.x / 64.0, v_start.y / 64.0 ));
+                  (double)v_start.x / 64, (double)v_start.y / 64 ));
       error = func_interface->line_to( &v_start, user );
 
     Close:
