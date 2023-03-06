@@ -1006,7 +1006,7 @@
     FT_ItemVarDelta*  deltaSet;
 
     FT_UInt          master, j;
-    FT_Fixed*        scalars;
+    FT_Fixed*        scalars = NULL;
     FT_ItemVarDelta  returnValue;
 
 
@@ -1984,7 +1984,7 @@
     FT_Var_Axis*    a;
     GX_AVarSegment  av;
 
-    FT_Fixed*  new_normalized;
+    FT_Fixed*  new_normalized = NULL;
     FT_Fixed*  old_normalized;
 
 
@@ -2714,6 +2714,8 @@
           a->name = (char*)"OpticalSize";
         else if ( a->tag == TTAG_slnt )
           a->name = (char*)"Slant";
+        else if ( a->tag == TTAG_ital )
+          a->name = (char*)"Italic";
 
         next_name += 5;
         a++;

@@ -240,7 +240,7 @@
       *e = FT_THROW( Invalid_Stream_Read );
       png_error( png, NULL );
 
-      return;
+      /* return; (never reached) */
     }
 
     ft_memcpy( data, stream->cursor, length );
