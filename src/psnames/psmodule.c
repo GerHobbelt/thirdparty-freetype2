@@ -454,7 +454,7 @@
   }
 
 
-  static FT_UInt32
+  static FT_UInt
   ps_unicodes_char_next( PS_Unicodes  table,
                          FT_UInt32   *unicode )
   {
