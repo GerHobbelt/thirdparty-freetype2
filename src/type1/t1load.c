@@ -443,19 +443,7 @@
                    FT_UInt    num_coords,
                    FT_Fixed*  coords )
   {
-    FT_Error  error;
-
-
-    error = t1_set_mm_blend( face, num_coords, coords );
-    if ( error )
-      return error;
-
-    if ( num_coords )
-      face->root.face_flags |= FT_FACE_FLAG_VARIATION;
-    else
-      face->root.face_flags &= ~FT_FACE_FLAG_VARIATION;
-
-    return FT_Err_Ok;
+    return t1_set_mm_blend( face, num_coords, coords );
   }
 
 
@@ -523,11 +511,6 @@
 
       for ( ; i < blend->num_designs; i++ )
         blend->weight_vector[i] = (FT_Fixed)0;
-
-      if ( len )
-        face->root.face_flags |= FT_FACE_FLAG_VARIATION;
-      else
-        face->root.face_flags &= ~FT_FACE_FLAG_VARIATION;
     }
 
     return FT_Err_Ok;
@@ -638,11 +621,6 @@
     error = t1_set_mm_blend( face, blend->num_axis, final_blends );
     if ( error )
       return error;
-
-    if ( num_coords )
-      face->root.face_flags |= FT_FACE_FLAG_VARIATION;
-    else
-      face->root.face_flags &= ~FT_FACE_FLAG_VARIATION;
 
     return FT_Err_Ok;
   }

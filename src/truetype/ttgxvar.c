@@ -2631,8 +2631,10 @@
         FT_UInt  strid = ~0U;
 
 
-        /* the default instance is missing in array the   */
-        /* of named instances; try to synthesize an entry */
+        /* The default instance is missing in array the    */
+        /* of named instances; try to synthesize an entry. */
+        /* If this fails, `default_named_instance` remains */
+        /* at value zero, which doesn't do any harm.       */
         found = sfnt->get_name_id( face,
                                    TT_NAME_ID_TYPOGRAPHIC_SUBFAMILY,
                                    &dummy1,
@@ -2659,6 +2661,9 @@
           {
             FT_TRACE5(( "TT_Get_MM_Var:"
                         " Adding default instance to named instances\n" ));
+
+            /* named instance indices start with value 1 */
+            face->var_default_named_instance = num_instances;
 
             ns = &mmvar->namedstyle[fvar_head.instanceCount];
 
@@ -2932,9 +2937,6 @@
       }
     }
 
-    /* enforce recomputation of the PostScript name; */
-    FT_FREE( face->postscript_name );
-
   Exit:
     return error;
   }
@@ -2974,19 +2976,7 @@
                    FT_UInt    num_coords,
                    FT_Fixed*  coords )
   {
-    FT_Error  error;
-
-
-    error = tt_set_mm_blend( face, num_coords, coords, 1 );
-    if ( error )
-      return error;
-
-    if ( num_coords )
-      face->root.face_flags |= FT_FACE_FLAG_VARIATION;
-    else
-      face->root.face_flags &= ~FT_FACE_FLAG_VARIATION;
-
-    return FT_Err_Ok;
+    return tt_set_mm_blend( face, num_coords, coords, 1 );
   }
 
 
@@ -3204,11 +3194,6 @@
     if ( error )
       goto Exit;
 
-    if ( num_coords )
-      face->root.face_flags |= FT_FACE_FLAG_VARIATION;
-    else
-      face->root.face_flags &= ~FT_FACE_FLAG_VARIATION;
-
   Exit:
     FT_FREE( normalized );
     return error;
@@ -3311,7 +3296,8 @@
    *     Value 0 indicates to not use an instance.
    *
    * @Return:
-   *   FreeType error code.  0~means success.
+   *   FreeType error code.  0~means success, -1 means success and unchanged
+   *   axis values.
    */
   FT_LOCAL_DEF( FT_Error )
   TT_Set_Named_Instance( TT_Face  face,
@@ -3320,6 +3306,8 @@
     FT_Error    error;
     GX_Blend    blend;
     FT_MM_Var*  mmvar;
+
+    FT_Memory  memory = face->root.memory;
 
     FT_UInt  num_instances;
 
@@ -3344,8 +3332,7 @@
 
     if ( instance_index > 0 )
     {
-      FT_Memory     memory = face->root.memory;
-      SFNT_Service  sfnt   = (SFNT_Service)face->sfnt;
+      SFNT_Service  sfnt = (SFNT_Service)face->sfnt;
 
       FT_Var_Named_Style*  named_style;
       FT_String*           style_name;
@@ -3367,23 +3354,70 @@
       error = TT_Set_Var_Design( face,
                                  mmvar->num_axis,
                                  named_style->coords );
-      if ( error )
-      {
-        /* internal error code -1 means `no change' */
-        if ( error == -1 )
-          error = FT_Err_Ok;
-        goto Exit;
-      }
     }
     else
+    {
+      /* restore non-VF style name */
+      FT_FREE( face->root.style_name );
+      if ( FT_STRDUP( face->root.style_name, face->non_var_style_name ) )
+        goto Exit;
       error = TT_Set_Var_Design( face, 0, NULL );
-
-    face->root.face_index  = ( instance_index << 16 )             |
-                             ( face->root.face_index & 0xFFFFL );
-    face->root.face_flags &= ~FT_FACE_FLAG_VARIATION;
+    }
 
   Exit:
     return error;
+  }
+
+
+  /**************************************************************************
+   *
+   * @Function:
+   *   TT_Get_Default_Named_Instance
+   *
+   * @Description:
+   *   Get the default named instance.
+   *
+   * @Input:
+   *   face ::
+   *     A handle to the source face.
+   *
+   * @Output:
+   *   instance_index ::
+   *     The default named instance index.
+   *
+   * @Return:
+   *   FreeType error code.  0~means success.
+   */
+  FT_LOCAL_DEF( FT_Error )
+  TT_Get_Default_Named_Instance( TT_Face   face,
+                                 FT_UInt  *instance_index )
+  {
+    FT_Error  error = FT_Err_Ok;
+
+
+    if ( !face->blend )
+    {
+      if ( FT_SET_ERROR( TT_Get_MM_Var( face, NULL ) ) )
+        goto Exit;
+    }
+
+    *instance_index = face->var_default_named_instance;
+
+  Exit:
+    return error;
+  }
+
+
+  /* This function triggers (lazy) recomputation of the `postscript_name` */
+  /* field in `TT_Face`.                                                  */
+
+  FT_LOCAL_DEF( void )
+  tt_construct_ps_name( TT_Face  face )
+  {
+    FT_Memory  memory = face->root.memory;
+
+
+    FT_FREE( face->postscript_name );
   }
 
 
