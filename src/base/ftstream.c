@@ -142,7 +142,9 @@
       if ( read_bytes > count )
         read_bytes = count;
 
-      FT_MEM_COPY( buffer, stream->base + pos, read_bytes );
+      /* Allow "reading" zero bytes without UB even if buffer is NULL */
+      if ( count )
+        FT_MEM_COPY( buffer, stream->base + pos, read_bytes );
     }
 
     stream->pos = pos + read_bytes;
@@ -179,7 +181,9 @@
       if ( read_bytes > count )
         read_bytes = count;
 
-      FT_MEM_COPY( buffer, stream->base + stream->pos, read_bytes );
+      /* Allow "reading" zero bytes without UB even if buffer is NULL */
+      if ( count )
+        FT_MEM_COPY( buffer, stream->base + stream->pos, read_bytes );
     }
 
     stream->pos += read_bytes;
