@@ -100,7 +100,7 @@
     T1_FIELD_CALLBACK( "CharStrings", t42_parse_charstrings, 0 )
     T1_FIELD_CALLBACK( "sfnts",       t42_parse_sfnts,       0 )
 
-    { 0, NULL, 0, 0, NULL, 0, 0, 0, 0, 0 }
+    T1_FIELD_ZERO
   };
 
 
@@ -1196,8 +1196,6 @@
   {
     T42_Parser  parser     = &loader->parser;
     FT_Byte*    limit;
-    FT_Int      n_keywords = (FT_Int)( sizeof ( t42_keywords ) /
-                                         sizeof ( t42_keywords[0] ) );
 
 
     parser->root.cursor = base;
@@ -1274,16 +1272,13 @@
 
         if ( len > 0 && len < 22 && parser->root.cursor < limit )
         {
-          int  i;
+          T1_Field  keyword = (T1_Field)t42_keywords;
 
 
           /* now compare the immediate name to the keyword table */
-
-          /* loop through all known keywords */
-          for ( i = 0; i < n_keywords; i++ )
+          while ( keyword->len )
           {
-            T1_Field  keyword = (T1_Field)&t42_keywords[i];
-            FT_Byte   *name   = (FT_Byte*)keyword->ident;
+            FT_Byte*  name = (FT_Byte*)keyword->ident;
 
 
             if ( !name )
@@ -1300,6 +1295,8 @@
                 return parser->root.error;
               break;
             }
+
+            keyword++;
           }
         }
       }
