@@ -100,7 +100,7 @@
     T1_FIELD_CALLBACK( "CharStrings", t42_parse_charstrings, 0 )
     T1_FIELD_CALLBACK( "sfnts",       t42_parse_sfnts,       0 )
 
-    { 0, T1_FIELD_LOCATION_CID_INFO, T1_FIELD_TYPE_NONE, 0, 0, 0, 0, 0, 0 }
+    { 0, NULL, 0, 0, NULL, 0, 0, 0, 0, 0 }
   };
 
 
@@ -1289,9 +1289,8 @@
             if ( !name )
               continue;
 
-            if ( cur[0] == name[0]                      &&
-                 len == ft_strlen( (const char *)name ) &&
-                 ft_memcmp( cur, name, len ) == 0       )
+            if ( keyword->len == len              &&
+                 ft_memcmp( cur, name, len ) == 0 )
             {
               /* we found it -- run the parsing callback! */
               parser->root.error = t42_load_keyword( face,

@@ -389,7 +389,7 @@
     T1_FIELD_CALLBACK( "ExpansionFactor", parse_expansion_factor, 0 )
     T1_FIELD_CALLBACK( "FontName",        parse_font_name, 0 )
 
-    { 0, T1_FIELD_LOCATION_CID_INFO, T1_FIELD_TYPE_NONE, 0, 0, 0, 0, 0, 0 }
+    { 0, NULL, 0, 0, NULL, 0, 0, 0, 0, 0 }
   };
 
 
@@ -479,26 +479,16 @@
               if ( !name )
                 break;
 
-              if ( cur[0] == name[0]                     &&
-                   len == ft_strlen( (const char*)name ) )
+              if ( keyword->len == len              &&
+                   ft_memcmp( cur, name, len ) == 0 )
               {
-                FT_UInt  n;
-
-
-                for ( n = 1; n < len; n++ )
-                  if ( cur[n] != name[n] )
-                    break;
-
-                if ( n >= len )
-                {
-                  /* we found it - run the parsing callback */
-                  parser->root.error = cid_load_keyword( face,
-                                                         loader,
-                                                         keyword );
-                  if ( parser->root.error )
-                    return parser->root.error;
-                  break;
-                }
+                /* we found it - run the parsing callback */
+                parser->root.error = cid_load_keyword( face,
+                                                       loader,
+                                                       keyword );
+                if ( parser->root.error )
+                  return parser->root.error;
+                break;
               }
               keyword++;
             }
