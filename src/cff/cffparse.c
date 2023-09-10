@@ -1065,7 +1065,7 @@
             code | CFFCODE,               \
             FT_FIELD_OFFSET( name ),      \
             FT_FIELD_SIZE( name ),        \
-            0, 0, 0                       \
+            NULL, 0, 0                    \
           },
 
 #define CFF_FIELD_DELTA( code, name, max, id ) \
@@ -1074,7 +1074,7 @@
             code | CFFCODE,                    \
             FT_FIELD_OFFSET( name ),           \
             FT_FIELD_SIZE_DELTA( name ),       \
-            0,                                 \
+            NULL,                              \
             max,                               \
             FT_FIELD_OFFSET( num_ ## name )    \
           },
@@ -1084,7 +1084,7 @@
 
 #include "cfftoken.h"
 
-    { 0, 0, 0, 0, 0, 0, 0 }
+    { 0, 0, 0, 0, NULL, 0, 0 }
   };
 
 
@@ -1118,7 +1118,7 @@
             code | CFFCODE,               \
             FT_FIELD_OFFSET( name ),      \
             FT_FIELD_SIZE( name ),        \
-            0, 0, 0,                      \
+            NULL, 0, 0,                   \
             id                            \
           },
 
@@ -1128,7 +1128,7 @@
             code | CFFCODE,                    \
             FT_FIELD_OFFSET( name ),           \
             FT_FIELD_SIZE_DELTA( name ),       \
-            0,                                 \
+            NULL,                              \
             max,                               \
             FT_FIELD_OFFSET( num_ ## name ),   \
             id                                 \
@@ -1139,7 +1139,7 @@
 
 #include "cfftoken.h"
 
-    { 0, 0, 0, 0, 0, 0, 0, 0 }
+    { 0, 0, 0, 0, NULL, 0, 0, NULL }
   };
 
 
