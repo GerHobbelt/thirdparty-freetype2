@@ -18,6 +18,7 @@
 #if defined(FT_MAKE_OPTION_SINGLE_OBJECT) && defined(BUILD_MONOLITHIC)
 
 #include <freetype/freetype.h>
+#include <freetype/internal/ftcalc.h>
 #include <freetype/internal/ftdebug.h>
 #include <freetype/internal/ftserv.h>
 #include <freetype/internal/services/svcfftl.h>
@@ -1753,10 +1754,10 @@
 
           /* without upper limit the loop below might not finish */
           if ( args[0] > 0x7FFFFFFFL )
-            args[0] = 46341;
+            args[0] = 0xB504F3L;    /* sqrt( 32768.0 ) */
           else if ( args[0] > 0 )
           {
-            FT_Fixed  root = args[0];
+            FT_Fixed  root = 1 << ( ( 17 + FT_MSB( args[0] ) ) >> 1 );
             FT_Fixed  new_root;
 
 
