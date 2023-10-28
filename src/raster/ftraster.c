@@ -646,13 +646,13 @@
       if ( overshoot )
         ras.cProfile->flags |= Overshoot_Bottom;
 
-      FT_TRACE6(( "  new ascending profile = %p\n", (void *)ras.cProfile ));
+      FT_TRACE7(( "  new ascending profile = %p\n", (void *)ras.cProfile ));
       break;
 
     case Descending_State:
       if ( overshoot )
         ras.cProfile->flags |= Overshoot_Top;
-      FT_TRACE6(( "  new descending profile = %p\n", (void *)ras.cProfile ));
+      FT_TRACE7(( "  new descending profile = %p\n", (void *)ras.cProfile ));
       break;
 
     default:
@@ -708,7 +708,7 @@
       PProfile  oldProfile;
 
 
-      FT_TRACE6(( "  ending profile %p, start = %ld, height = %ld\n",
+      FT_TRACE7(( "  ending profile %p, start = %ld, height = %ld\n",
                   (void *)ras.cProfile, ras.cProfile->start, h ));
 
       ras.cProfile->height = h;
@@ -3039,6 +3039,9 @@
         if ( y_min == y_max )
           return ras.error;  /* still Raster_Overflow */
 
+        FT_TRACE6(( "band [%d..%d]: to be bisected\n",
+                    y_min, y_max ));
+
         y_mid = ( y_min + y_max ) >> 1;
 
         band_stack[band_top++] = y_min;
@@ -3046,6 +3049,9 @@
       }
       else
       {
+        FT_TRACE6(( "band [%d..%d]: %td bytes remaining\n",
+                    y_min, y_max, (char*)ras.maxBuff - (char*)ras.top ));
+
         if ( ras.fProfile )
           if ( Draw_Sweep( RAS_VAR ) )
              return ras.error;
@@ -3096,7 +3102,7 @@
     }
 
     /* Vertical Sweep */
-    FT_TRACE7(( "Vertical pass (ftraster)\n" ));
+    FT_TRACE6(( "Vertical pass (ftraster)\n" ));
 
     ras.Proc_Sweep_Init = Vertical_Sweep_Init;
     ras.Proc_Sweep_Span = Vertical_Sweep_Span;
@@ -3116,7 +3122,7 @@
     /* Horizontal Sweep */
     if ( !( ras.outline.flags & FT_OUTLINE_SINGLE_PASS ) )
     {
-      FT_TRACE7(( "Horizontal pass (ftraster)\n" ));
+      FT_TRACE6(( "Horizontal pass (ftraster)\n" ));
 
       ras.Proc_Sweep_Init = Horizontal_Sweep_Init;
       ras.Proc_Sweep_Span = Horizontal_Sweep_Span;
