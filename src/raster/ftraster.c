@@ -619,24 +619,24 @@
   New_Profile( RAS_ARGS TStates  aState,
                         Bool     overshoot )
   {
-    if ( !ras.fProfile )
+    if ( !ras.cProfile || ras.cProfile->height )
     {
       ras.cProfile  = (PProfile)ras.top;
-      ras.fProfile  = ras.cProfile;
       ras.top      += AlignProfileSize;
-    }
 
-    if ( ras.top >= ras.maxBuff )
-    {
-      ras.error = FT_THROW( Raster_Overflow );
-      return FAILURE;
+      if ( ras.top >= ras.maxBuff )
+      {
+        FT_TRACE1(( "overflow in New_Profile\n" ));
+        ras.error = FT_THROW( Raster_Overflow );
+        return FAILURE;
+      }
     }
 
     ras.cProfile->start  = 0;
     ras.cProfile->height = 0;
     ras.cProfile->offset = ras.top;
-    ras.cProfile->link   = (PProfile)0;
-    ras.cProfile->next   = (PProfile)0;
+    ras.cProfile->link   = NULL;
+    ras.cProfile->next   = NULL;
     ras.cProfile->flags  = ras.dropOutControl;
 
     switch ( aState )
@@ -705,9 +705,6 @@
 
     if ( h > 0 )
     {
-      PProfile  oldProfile;
-
-
       FT_TRACE7(( "  ending profile %p, start = %ld, height = %ld\n",
                   (void *)ras.cProfile, ras.cProfile->start, h ));
 
@@ -720,23 +717,10 @@
           ras.cProfile->flags |= Overshoot_Bottom;
       }
 
-      oldProfile   = ras.cProfile;
-      ras.cProfile = (PProfile)ras.top;
+      /* premature, the last profile in the controur must loop */
+      ras.cProfile->next = (PProfile)ras.top;
 
-      ras.top += AlignProfileSize;
-
-      ras.cProfile->height = 0;
-      ras.cProfile->offset = ras.top;
-
-      oldProfile->next = ras.cProfile;
       ras.num_Profs++;
-    }
-
-    if ( ras.top >= ras.maxBuff )
-    {
-      FT_TRACE1(( "overflow in End_Profile\n" ));
-      ras.error = FT_THROW( Raster_Overflow );
-      return FAILURE;
     }
 
     ras.joint = FALSE;
@@ -1975,21 +1959,19 @@
 
 
     ras.fProfile = NULL;
+    ras.cProfile = NULL;
     ras.joint    = FALSE;
     ras.fresh    = FALSE;
 
-    ras.maxBuff  = ras.sizeBuff - AlignProfileSize;
+    ras.top      = ras.buff;
+    ras.maxBuff  = ras.sizeBuff;
 
-    ras.numTurns = 0;
-
-    ras.cProfile         = (PProfile)ras.top;
-    ras.cProfile->offset = ras.top;
-    ras.num_Profs        = 0;
+    ras.numTurns  = 0;
+    ras.num_Profs = 0;
 
     last = -1;
     for ( i = 0; i < ras.outline.n_contours; i++ )
     {
-      PProfile  lastProfile;
       Bool      o;
 
 
@@ -2002,18 +1984,19 @@
       if ( Decompose_Curve( RAS_VARS first, last, flipped ) )
         return FAILURE;
 
+      /* Note that ras.gProfile can stay nil if the contour was */
+      /* too small to be drawn or degenerate.                   */
+      if ( !ras.gProfile )
+        continue;
+
       /* we must now check whether the extreme arcs join or not */
       if ( FRAC( ras.lastY ) == 0 &&
            ras.lastY >= ras.minY  &&
            ras.lastY <= ras.maxY  )
-        if ( ras.gProfile                        &&
-             ( ras.gProfile->flags & Flow_Up ) ==
+        if ( ( ras.gProfile->flags & Flow_Up ) ==
                ( ras.cProfile->flags & Flow_Up ) )
           ras.top--;
-        /* Note that ras.gProfile can be nil if the contour was too small */
-        /* to be drawn.                                                   */
 
-      lastProfile = ras.cProfile;
       if ( ras.top != ras.cProfile->offset &&
            ( ras.cProfile->flags & Flow_Up ) )
         o = IS_TOP_OVERSHOOT( ras.lastY );
@@ -2022,9 +2005,11 @@
       if ( End_Profile( RAS_VARS o ) )
         return FAILURE;
 
-      /* close the `next profile in contour' linked list */
-      if ( ras.gProfile )
-        lastProfile->next = ras.gProfile;
+      /* loop the last profile in the contour */
+      ras.cProfile->next = ras.gProfile;
+
+      if ( !ras.fProfile )
+        ras.fProfile = ras.gProfile;
     }
 
     if ( Finalize_Profile_Table( RAS_VAR ) )
@@ -3025,8 +3010,6 @@
       ras.minY = (Long)y_min * ras.precision;
       ras.maxY = (Long)y_max * ras.precision;
 
-      ras.top = ras.buff;
-
       ras.error = Raster_Err_Ok;
 
       if ( Convert_Glyph( RAS_VARS flipped ) )
@@ -3049,8 +3032,9 @@
       }
       else
       {
-        FT_TRACE6(( "band [%d..%d]: %td bytes remaining\n",
-                    y_min, y_max, (char*)ras.maxBuff - (char*)ras.top ));
+        FT_TRACE6(( "band [%d..%d]: %hd profiles; %td bytes remaining\n",
+                    y_min, y_max, ras.num_Profs,
+                    (char*)ras.maxBuff - (char*)ras.top ));
 
         if ( ras.fProfile )
           if ( Draw_Sweep( RAS_VAR ) )
