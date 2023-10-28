@@ -610,29 +610,16 @@
   static Bool
   Insert_Y_Turn( RAS_ARGS Int  y )
   {
-    PLong  y_turns;
-    Int    n;
+    Int    n       = ras.numTurns;
+    PLong  y_turns = ras.maxBuff;
 
-
-    n       = ras.numTurns - 1;
-    y_turns = ras.sizeBuff - ras.numTurns;
 
     /* look for first y value that is <= */
-    while ( n >= 0 && y < y_turns[n] )
-      n--;
+    while ( n-- && y < y_turns[n] )
+      ;
 
     /* if it is <, simply insert it, ignore if == */
-    if ( n >= 0 && y > y_turns[n] )
-      do
-      {
-        Int  y2 = (Int)y_turns[n];
-
-
-        y_turns[n] = y;
-        y = y2;
-      } while ( --n >= 0 );
-
-    if ( n < 0 )
+    if ( n < 0 || y > y_turns[n] )
     {
       ras.maxBuff--;
       if ( ras.maxBuff <= ras.top )
@@ -640,8 +627,17 @@
         ras.error = FT_THROW( Raster_Overflow );
         return FAILURE;
       }
+
+      do
+      {
+        Int  y2 = (Int)y_turns[n];
+
+
+        y_turns[n] = y;
+        y = y2;
+      } while ( n-- >= 0 );
+
       ras.numTurns++;
-      ras.sizeBuff[-ras.numTurns] = y;
     }
 
     return SUCCESS;
@@ -2012,19 +2008,6 @@
 
   /**************************************************************************
    *
-   * Init_Linked
-   *
-   *   Initializes an empty linked list.
-   */
-  static void
-  Init_Linked( TProfileList*  l )
-  {
-    *l = NULL;
-  }
-
-
-  /**************************************************************************
-   *
    * InsNew
    *
    *   Inserts a new profile in a linked list.
@@ -2630,6 +2613,9 @@
    *
    * Generic Sweep Drawing routine
    *
+   * Note that this routine is executed with the pool containing at least
+   * two valid profiles (up and down) and two y-turns (top and bottom).
+   *
    */
 
   static Bool
@@ -2643,16 +2629,10 @@
 
     Long          x1, x2, xs, e1, e2;
 
-    TProfileList  waiting;
-    TProfileList  draw_left, draw_right;
+    TProfileList  waiting    = NULL;
+    TProfileList  draw_left  = NULL;
+    TProfileList  draw_right = NULL;
 
-
-    /* initialize empty linked lists */
-
-    Init_Linked( &waiting );
-
-    Init_Linked( &draw_left  );
-    Init_Linked( &draw_right );
 
     /* first, compute min and max Y */
 
@@ -2678,13 +2658,6 @@
       P = Q;
     }
 
-    /* check the Y-turns */
-    if ( ras.numTurns == 0 )
-    {
-      ras.error = FT_THROW( Invalid_Outline );
-      return FAILURE;
-    }
-
     /* now initialize the sweep */
 
     ras.Proc_Sweep_Init( RAS_VARS min_Y, max_Y );
@@ -2704,8 +2677,7 @@
     y        = min_Y;
     y_height = 0;
 
-    if ( ras.numTurns > 0                     &&
-         ras.sizeBuff[-ras.numTurns] == min_Y )
+    if ( ras.sizeBuff[-ras.numTurns] == min_Y )
       ras.numTurns--;
 
     while ( ras.numTurns > 0 )
