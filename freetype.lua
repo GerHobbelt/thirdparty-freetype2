@@ -13,7 +13,7 @@ defines {
 
 includedirs {
   "include",
-  _3RDPARTY_DIR .. "/zlib",
+  _3RDPARTY_DIR .. "/zlib-ng",
 }
 
 files {
