@@ -116,10 +116,9 @@
     {
     case FT_GLYPH_FORMAT_BITMAP:
       {
-        FT_BitmapGlyph  bitg;
+        FT_BitmapGlyph  bitg = (FT_BitmapGlyph)glyph;
 
 
-        bitg = (FT_BitmapGlyph)glyph;
         size = bitg->bitmap.rows * (FT_Offset)FT_ABS( bitg->bitmap.pitch ) +
                sizeof ( *bitg );
       }
@@ -127,10 +126,9 @@
 
     case FT_GLYPH_FORMAT_OUTLINE:
       {
-        FT_OutlineGlyph  outg;
+        FT_OutlineGlyph  outg = (FT_OutlineGlyph)glyph;
 
 
-        outg = (FT_OutlineGlyph)glyph;
         size = (FT_Offset)outg->outline.n_points *
                  ( sizeof ( FT_Vector ) + sizeof ( FT_Byte ) ) +
                (FT_Offset)outg->outline.n_contours * sizeof ( FT_Short ) +
