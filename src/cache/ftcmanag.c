@@ -23,7 +23,6 @@
 #include <freetype/internal/ftdebug.h>
 #include <freetype/ftsizes.h>
 
-#include "ftccback.h"
 #include "ftcerror.h"
 
 
@@ -450,17 +449,12 @@
       {
         cache->clazz.cache_done( cache );
         FT_FREE( cache );
-        manager->caches[idx] = NULL;
       }
     }
-    manager->num_caches = 0;
 
     /* discard faces and sizes */
     FTC_MruList_Done( &manager->sizes );
     FTC_MruList_Done( &manager->faces );
-
-    manager->library = NULL;
-    manager->memory  = NULL;
 
     FT_FREE( manager );
   }
