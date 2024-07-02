@@ -1914,28 +1914,17 @@
 
     for ( i = 0; i < blend->num_axis; i++ )
     {
-      FT_TRACE6(( "    axis %d coordinate %.5f:\n",
-                  i, (double)blend->normalizedcoords[i] / 65536 ));
+      FT_Fixed  ncv = blend->normalizedcoords[i];
+
+
+      FT_TRACE6(( "    axis %d coordinate %.5f:\n", i, (double)ncv / 65536 ));
 
       /* It's not clear why (for intermediate tuples) we don't need     */
       /* to check against start/end -- the documentation says we don't. */
       /* Similarly, it's unclear why we don't need to scale along the   */
       /* axis.                                                          */
 
-      if ( tuple_coords[i] == 0 )
-      {
-        FT_TRACE6(( "      tuple coordinate is zero, ignore\n" ));
-        continue;
-      }
-
-      if ( blend->normalizedcoords[i] == 0 )
-      {
-        FT_TRACE6(( "      axis coordinate is zero, stop\n" ));
-        apply = 0;
-        break;
-      }
-
-      if ( blend->normalizedcoords[i] == tuple_coords[i] )
+      if ( tuple_coords[i] == ncv )
       {
         FT_TRACE6(( "      tuple coordinate %.5f fits perfectly\n",
                     (double)tuple_coords[i] / 65536 ));
@@ -1943,31 +1932,37 @@
         continue;
       }
 
+      if ( tuple_coords[i] == 0 )
+      {
+        FT_TRACE6(( "      tuple coordinate is zero, ignore\n" ));
+        continue;
+      }
+
       if ( !( tupleIndex & GX_TI_INTERMEDIATE_TUPLE ) )
       {
         /* not an intermediate tuple */
 
-        if ( blend->normalizedcoords[i] < FT_MIN( 0, tuple_coords[i] ) ||
-             blend->normalizedcoords[i] > FT_MAX( 0, tuple_coords[i] ) )
+        if ( ( tuple_coords[i] > ncv && ncv > 0 ) ||
+             ( tuple_coords[i] < ncv && ncv < 0 ) )
+        {
+          FT_TRACE6(( "      tuple coordinate %.5f fits\n",
+                      (double)tuple_coords[i] / 65536 ));
+          apply = FT_MulDiv( apply, ncv, tuple_coords[i] );
+        }
+        else
         {
           FT_TRACE6(( "      tuple coordinate %.5f is exceeded, stop\n",
                       (double)tuple_coords[i] / 65536 ));
           apply = 0;
           break;
         }
-
-        FT_TRACE6(( "      tuple coordinate %.5f fits\n",
-                    (double)tuple_coords[i] / 65536 ));
-        apply = FT_MulDiv( apply,
-                           blend->normalizedcoords[i],
-                           tuple_coords[i] );
       }
       else
       {
         /* intermediate tuple */
 
-        if ( blend->normalizedcoords[i] <= im_start_coords[i] ||
-             blend->normalizedcoords[i] >= im_end_coords[i]   )
+        if ( ncv <= im_start_coords[i] ||
+             ncv >= im_end_coords[i]   )
         {
           FT_TRACE6(( "      intermediate tuple range ]%.5f;%.5f[ is exceeded,"
                       " stop\n",
@@ -1980,13 +1975,13 @@
         FT_TRACE6(( "      intermediate tuple range ]%.5f;%.5f[ fits\n",
                     (double)im_start_coords[i] / 65536,
                     (double)im_end_coords[i] / 65536 ));
-        if ( blend->normalizedcoords[i] < tuple_coords[i] )
+        if ( ncv < tuple_coords[i] )
           apply = FT_MulDiv( apply,
-                             blend->normalizedcoords[i] - im_start_coords[i],
+                             ncv - im_start_coords[i],
                              tuple_coords[i] - im_start_coords[i] );
-        else
+        else /* ncv > tuple_coords[i] */
           apply = FT_MulDiv( apply,
-                             im_end_coords[i] - blend->normalizedcoords[i],
+                             im_end_coords[i] - ncv,
                              im_end_coords[i] - tuple_coords[i] );
       }
     }
@@ -2135,12 +2130,12 @@
                                          outerIndex,
                                          innerIndex );
 
-          /* Convert to 16.16 format before adding. */
-	  v += MUL_INT( delta, 4 );
+          /* Convert delta in F2DOT14 to 16.16 before adding. */
+          v += MUL_INT( delta, 4 );
 
-	  /* Clamp value range. */
-	  v = v >=  0x10000L ?  0x10000 : v;
-	  v = v <= -0x10000L ? -0x10000 : v;
+          /* Clamp value range [-1, 1]. */
+          v = v >=  0x10000L ?  0x10000 : v;
+          v = v <= -0x10000L ? -0x10000 : v;
 
           new_normalized[i] = v;
         }
@@ -3527,9 +3522,10 @@
     FT_ULong  here;
     FT_UInt   i, j;
 
-    FT_Fixed*  tuple_coords    = NULL;
-    FT_Fixed*  im_start_coords = NULL;
-    FT_Fixed*  im_end_coords   = NULL;
+    FT_Fixed*  peak_coords = NULL;
+    FT_Fixed*  tuple_coords;
+    FT_Fixed*  im_start_coords;
+    FT_Fixed*  im_end_coords;
 
     GX_Blend  blend = face->blend;
 
@@ -3550,16 +3546,16 @@
     {
       FT_TRACE2(( "\n" ));
       FT_TRACE2(( "tt_face_vary_cvt: no blend specified\n" ));
-      error = FT_Err_Ok;
-      goto Exit;
+
+      return FT_Err_Ok;
     }
 
     if ( !face->cvt )
     {
       FT_TRACE2(( "\n" ));
       FT_TRACE2(( "tt_face_vary_cvt: no `cvt ' table\n" ));
-      error = FT_Err_Ok;
-      goto Exit;
+
+      return FT_Err_Ok;
     }
 
     error = face->goto_table( face, TTAG_cvar, stream, &table_len );
@@ -3567,15 +3563,11 @@
     {
       FT_TRACE2(( "is missing\n" ));
 
-      error = FT_Err_Ok;
-      goto Exit;
+      return FT_Err_Ok;
     }
 
     if ( FT_FRAME_ENTER( table_len ) )
-    {
-      error = FT_Err_Ok;
-      goto Exit;
-    }
+      return FT_Err_Ok;
 
     table_start = FT_Stream_FTell( stream );
     if ( FT_GET_LONG() != 0x00010000L )
@@ -3587,11 +3579,6 @@
     }
 
     FT_TRACE2(( "loaded\n" ));
-
-    if ( FT_NEW_ARRAY( tuple_coords, blend->num_axis )    ||
-         FT_NEW_ARRAY( im_start_coords, blend->num_axis ) ||
-         FT_NEW_ARRAY( im_end_coords, blend->num_axis )   )
-      goto FExit;
 
     tupleCount   = FT_GET_USHORT();
     offsetToData = FT_GET_USHORT();
@@ -3628,8 +3615,12 @@
                 tupleCount & GX_TC_TUPLE_COUNT_MASK,
                 ( tupleCount & GX_TC_TUPLE_COUNT_MASK ) == 1 ? "" : "s" ));
 
-    if ( FT_NEW_ARRAY( cvt_deltas, face->cvt_size ) )
-      goto FExit;
+    if ( FT_QNEW_ARRAY( peak_coords, 3 * blend->num_axis ) ||
+         FT_NEW_ARRAY( cvt_deltas, face->cvt_size )        )
+      goto Exit;
+
+    im_start_coords = peak_coords + blend->num_axis;
+    im_end_coords = im_start_coords + blend->num_axis;
 
     for ( i = 0; i < ( tupleCount & GX_TC_TUPLE_COUNT_MASK ); i++ )
     {
@@ -3646,32 +3637,19 @@
       if ( tupleIndex & GX_TI_EMBEDDED_TUPLE_COORD )
       {
         for ( j = 0; j < blend->num_axis; j++ )
-          tuple_coords[j] = FT_fdot14ToFixed( FT_GET_SHORT() );
+          peak_coords[j] = FT_fdot14ToFixed( FT_GET_SHORT() );
+        tuple_coords = peak_coords;
       }
-      else if ( ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) >= blend->tuplecount )
+      else if ( ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) < blend->tuplecount )
+        tuple_coords = blend->tuplecoords +
+            ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) * blend->num_axis;
+      else
       {
         FT_TRACE2(( "tt_face_vary_cvt:"
                     " invalid tuple index\n" ));
 
         error = FT_THROW( Invalid_Table );
-        goto FExit;
-      }
-      else
-      {
-        if ( !blend->tuplecoords )
-        {
-          FT_TRACE2(( "tt_face_vary_cvt:"
-                      " no valid tuple coordinates available\n" ));
-
-          error = FT_THROW( Invalid_Table );
-          goto FExit;
-        }
-
-        FT_MEM_COPY(
-          tuple_coords,
-          blend->tuplecoords +
-            ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) * blend->num_axis,
-          blend->num_axis * sizeof ( FT_Fixed ) );
+        goto Exit;
       }
 
       if ( tupleIndex & GX_TI_INTERMEDIATE_TUPLE )
@@ -3814,22 +3792,20 @@
     for ( i = 0; i < face->cvt_size; i++ )
       face->cvt[i] += FT_fixedToFdot6( cvt_deltas[i] );
 
-  FExit:
-    FT_FRAME_EXIT();
-
-  Exit:
-    if ( sharedpoints != ALL_POINTS )
-      FT_FREE( sharedpoints );
-    FT_FREE( tuple_coords );
-    FT_FREE( im_start_coords );
-    FT_FREE( im_end_coords );
-    FT_FREE( cvt_deltas );
-
     /* iterate over all FT_Size objects and set `cvt_ready' to -1 */
     /* to trigger rescaling of all CVT values                     */
     FT_List_Iterate( &root->sizes_list,
                      tt_cvt_ready_iterator,
                      NULL );
+
+  Exit:
+    if ( sharedpoints != ALL_POINTS )
+      FT_FREE( sharedpoints );
+    FT_FREE( cvt_deltas );
+    FT_FREE( peak_coords );
+
+  FExit:
+    FT_FRAME_EXIT();
 
     return error;
 
@@ -4093,9 +4069,10 @@
     FT_ULong  here;
     FT_UInt   i, j;
 
-    FT_Fixed*  tuple_coords    = NULL;
-    FT_Fixed*  im_start_coords = NULL;
-    FT_Fixed*  im_end_coords   = NULL;
+    FT_Fixed*  peak_coords = NULL;
+    FT_Fixed*  tuple_coords;
+    FT_Fixed*  im_start_coords;
+    FT_Fixed*  im_end_coords;
 
     GX_Blend  blend = face->blend;
 
@@ -4130,26 +4107,16 @@
       return FT_Err_Ok;
     }
 
-    if ( FT_NEW_ARRAY( points_org, n_points ) ||
-         FT_NEW_ARRAY( points_out, n_points ) ||
-         FT_NEW_ARRAY( has_delta, n_points )  )
-      goto Fail1;
-
     dataSize = blend->glyphoffsets[glyph_index + 1] -
                  blend->glyphoffsets[glyph_index];
 
     if ( FT_STREAM_SEEK( blend->glyphoffsets[glyph_index] ) ||
          FT_FRAME_ENTER( dataSize )                         )
-      goto Fail1;
+      return error;
 
     glyph_start = FT_Stream_FTell( stream );
 
     /* each set of glyph variation data is formatted similarly to `cvar' */
-
-    if ( FT_NEW_ARRAY( tuple_coords, blend->num_axis )    ||
-         FT_NEW_ARRAY( im_start_coords, blend->num_axis ) ||
-         FT_NEW_ARRAY( im_end_coords, blend->num_axis )   )
-      goto Fail2;
 
     tupleCount   = FT_GET_USHORT();
     offsetToData = FT_GET_USHORT();
@@ -4162,7 +4129,7 @@
                   " invalid glyph variation array header\n" ));
 
       error = FT_THROW( Invalid_Table );
-      goto Fail2;
+      goto FExit;
     }
 
     offsetToData += glyph_start;
@@ -4186,9 +4153,16 @@
                 tupleCount & GX_TC_TUPLE_COUNT_MASK,
                 ( tupleCount & GX_TC_TUPLE_COUNT_MASK ) == 1 ? "" : "s" ));
 
-    if ( FT_NEW_ARRAY( point_deltas_x, n_points ) ||
-         FT_NEW_ARRAY( point_deltas_y, n_points ) )
-      goto Fail3;
+    if ( FT_QNEW_ARRAY( peak_coords, 3 * blend->num_axis ) ||
+         FT_NEW_ARRAY( point_deltas_x, 2 * n_points )      ||
+         FT_QNEW_ARRAY( points_org, n_points )             ||
+         FT_QNEW_ARRAY( points_out, n_points )             ||
+         FT_QNEW_ARRAY( has_delta, n_points )              )
+      goto Exit;
+
+    im_start_coords = peak_coords + blend->num_axis;
+    im_end_coords   = im_start_coords + blend->num_axis;
+    point_deltas_y  = point_deltas_x + n_points;
 
     for ( j = 0; j < n_points; j++ )
     {
@@ -4211,22 +4185,20 @@
       if ( tupleIndex & GX_TI_EMBEDDED_TUPLE_COORD )
       {
         for ( j = 0; j < blend->num_axis; j++ )
-          tuple_coords[j] = FT_fdot14ToFixed( FT_GET_SHORT() );
+          peak_coords[j] = FT_fdot14ToFixed( FT_GET_SHORT() );
+        tuple_coords = peak_coords;
       }
-      else if ( ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) >= blend->tuplecount )
+      else if ( ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) < blend->tuplecount )
+        tuple_coords = blend->tuplecoords +
+            ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) * blend->num_axis;
+      else
       {
         FT_TRACE2(( "TT_Vary_Apply_Glyph_Deltas:"
                     " invalid tuple index\n" ));
 
         error = FT_THROW( Invalid_Table );
-        goto Fail3;
+        goto Exit;
       }
-      else
-        FT_MEM_COPY(
-          tuple_coords,
-          blend->tuplecoords +
-            ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) * blend->num_axis,
-          blend->num_axis * sizeof ( FT_Fixed ) );
 
       if ( tupleIndex & GX_TI_INTERMEDIATE_TUPLE )
       {
@@ -4454,23 +4426,17 @@
                                        unrounded[n_points - 2].y ) / 64;
     }
 
-  Fail3:
-    FT_FREE( point_deltas_x );
-    FT_FREE( point_deltas_y );
-
-  Fail2:
+  Exit:
     if ( sharedpoints != ALL_POINTS )
       FT_FREE( sharedpoints );
-    FT_FREE( tuple_coords );
-    FT_FREE( im_start_coords );
-    FT_FREE( im_end_coords );
-
-    FT_FRAME_EXIT();
-
-  Fail1:
     FT_FREE( points_org );
     FT_FREE( points_out );
     FT_FREE( has_delta );
+    FT_FREE( peak_coords );
+    FT_FREE( point_deltas_x );
+
+  FExit:
+    FT_FRAME_EXIT();
 
     return error;
   }
