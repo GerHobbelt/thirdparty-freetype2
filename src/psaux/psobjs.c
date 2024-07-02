@@ -24,6 +24,7 @@
 
 #include "psobjs.h"
 #include "psconv.h"
+#include "psft.h"
 
 #include "psauxerr.h"
 #include "psauxmod.h"
@@ -201,7 +202,9 @@
     /* add the object to the base block and adjust offset */
     table->elements[idx] = FT_OFFSET( table->block, table->cursor );
     table->lengths [idx] = length;
-    FT_MEM_COPY( table->block + table->cursor, object, length );
+    /* length == 0 also implies a NULL destination, so skip the copy call */
+    if ( length > 0 )
+      FT_MEM_COPY( table->block + table->cursor, object, length );
 
     table->cursor += length;
     return FT_Err_Ok;
