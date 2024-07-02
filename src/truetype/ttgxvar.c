@@ -597,13 +597,17 @@
 
       for ( j = 0; j < itemStore->axisCount; j++ )
       {
-        FT_Short  start, peak, end;
+        FT_Int  start, peak, end;
 
 
         if ( FT_READ_SHORT( start ) ||
              FT_READ_SHORT( peak )  ||
              FT_READ_SHORT( end )   )
           goto Exit;
+
+        /* immediately tag invalid ranges with special peak = 0 */
+        if ( ( start < 0 && end > 0 ) || start > peak || peak > end )
+          peak = 0;
 
         axisCoords[j].startCoord = FT_fdot14ToFixed( start );
         axisCoords[j].peakCoord  = FT_fdot14ToFixed( peak );
@@ -1078,24 +1082,15 @@
         FT_Fixed  ncv = ttface->blend->normalizedcoords[j];
 
 
-        /* compute the scalar contribution of this axis; */
-        /* ignore invalid ranges                         */
-        if ( axis->startCoord > axis->peakCoord ||
-             axis->peakCoord > axis->endCoord   )
-          continue;
-
-        else if ( axis->startCoord < 0 &&
-                  axis->endCoord > 0   &&
-                  axis->peakCoord != 0 )
-          continue;
-
-        /* peak of 0 means ignore this axis */
-        else if ( axis->peakCoord == 0 )
+        /* compute the scalar contribution of this axis */
+        /* with peak of 0 used for invalid axes         */
+        if ( axis->peakCoord == ncv ||
+             axis->peakCoord == 0   )
           continue;
 
         /* ignore this region if coords are out of range */
-        else if ( ncv < axis->startCoord ||
-                  ncv > axis->endCoord   )
+        else if ( ncv <= axis->startCoord ||
+                  ncv >= axis->endCoord   )
         {
           scalar = 0;
           break;
@@ -1106,7 +1101,7 @@
           scalar = FT_MulDiv( scalar,
                               ncv - axis->startCoord,
                               axis->peakCoord - axis->startCoord );
-        else if ( ncv > axis->peakCoord )
+        else   /* ncv > axis->peakCoord */
           scalar = FT_MulDiv( scalar,
                               axis->endCoord - ncv,
                               axis->endCoord - axis->peakCoord );
