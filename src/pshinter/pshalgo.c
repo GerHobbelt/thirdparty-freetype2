@@ -1119,7 +1119,7 @@
     FT_UInt     n;
     PSH_Point   point = glyph->points;
     FT_Vector*  vec   = glyph->outline->points;
-    char*       tags  = glyph->outline->tags;
+    FT_Byte*    tags  = glyph->outline->tags;
 
 
     for ( n = 0; n < glyph->num_points; n++ )
@@ -1172,8 +1172,8 @@
          FT_QNEW_ARRAY( glyph->contours, outline->n_contours ) )
       goto Exit;
 
-    glyph->num_points   = (FT_UInt)outline->n_points;
-    glyph->num_contours = (FT_UInt)outline->n_contours;
+    glyph->num_points   = outline->n_points;
+    glyph->num_contours = outline->n_contours;
 
     {
       FT_UInt      first = 0, next, n;
@@ -1187,7 +1187,7 @@
         PSH_Point  point;
 
 
-        next  = (FT_UInt)outline->contours[n] + 1;
+        next  = outline->contours[n] + 1;
         count = next - first;
 
         contour->start = points + first;

@@ -3838,7 +3838,7 @@
     }
 
     /* if the outline is empty, return */
-    if ( outline->n_points <= 0 || outline->n_contours <= 0 )
+    if ( outline->n_points == 0 || outline->n_contours == 0 )
       goto Exit;
 
     /* check whether the outline has valid fields */
