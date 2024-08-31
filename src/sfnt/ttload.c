@@ -1047,7 +1047,7 @@
   FT_LOCAL_DEF( void )
   tt_face_free_name( TT_Face  face )
   {
-    FT_Memory     memory = face->root.driver->root.memory;
+    FT_Memory     memory = face->root.memory;
     TT_NameTable  table  = &face->name_table;
 
 
