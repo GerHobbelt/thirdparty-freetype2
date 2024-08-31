@@ -3457,7 +3457,7 @@
    *     A complete shape which is used to generate SDF.
    *
    *   spread ::
-   *     Maximum distances to be allowed inthe output bitmap.
+   *     Maximum distances to be allowed in the output bitmap.
    *
    * @Output:
    *   bitmap ::
