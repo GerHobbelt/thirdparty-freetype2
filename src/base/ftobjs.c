@@ -1254,13 +1254,13 @@
     FT_Driver  driver = (FT_Driver)driver_;
 
 
-    /* finalize client-specific data */
-    if ( size->generic.finalizer )
-      size->generic.finalizer( size );
-
     /* finalize format-specific stuff */
     if ( driver->clazz->done_size )
       driver->clazz->done_size( size );
+
+    /* finalize client-specific data */
+    if ( size->generic.finalizer )
+      size->generic.finalizer( size );
 
     FT_FREE( size->internal );
     FT_FREE( size );
@@ -1323,10 +1323,6 @@
                       driver );
     face->size = NULL;
 
-    /* now discard client data */
-    if ( face->generic.finalizer )
-      face->generic.finalizer( face );
-
     /* discard charmaps */
     destroy_charmaps( face, memory );
 
@@ -1340,6 +1336,10 @@
       ( face->face_flags & FT_FACE_FLAG_EXTERNAL_STREAM ) != 0 );
 
     face->stream = NULL;
+
+    /* now discard client data */
+    if ( face->generic.finalizer )
+      face->generic.finalizer( face );
 
     /* get rid of it */
     if ( face->internal )
