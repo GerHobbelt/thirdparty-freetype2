@@ -268,6 +268,7 @@
     char*           glyph_name;
     long            glyph_enc;
 
+    bdf_glyph_t*    glyph;
     bdf_font_t*     font;
     bdf_options_t*  opts;
 
@@ -673,17 +674,22 @@
 
   static const unsigned char  a2i[128] =
   {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
   };
 
   static const unsigned char  ddigits[32] =
@@ -934,9 +940,6 @@
                           BDF_DWIDTH_   | \
                           BDF_BBX_      | \
                           BDF_BITMAP_   )
-
-#define BDF_GLYPH_WIDTH_CHECK_   0x40000000UL
-#define BDF_GLYPH_HEIGHT_CHECK_  0x80000000UL
 
 
   static FT_Error
@@ -1275,7 +1278,67 @@
   }
 
 
-  /* Actually parse the glyph info and bitmaps. */
+  /* Line function prototype. */
+  static FT_Error
+  bdf_parse_glyphs_( char*          line,
+                     unsigned long  linelen,
+                     unsigned long  lineno,
+                     void*          call_data,
+                     void*          client_data );
+
+
+  /* Aggressively parse the glyph bitmaps. */
+  static FT_Error
+  bdf_parse_bitmap_( char*          line,
+                     unsigned long  linelen,
+                     unsigned long  lineno,
+                     void*          call_data,
+                     void*          client_data )
+  {
+    bdf_line_func_t_*  next  = (bdf_line_func_t_ *)call_data;
+    bdf_parse_t_*      p     = (bdf_parse_t_ *)    client_data;
+    bdf_glyph_t*       glyph = p->glyph;
+
+    unsigned char*     bp;
+    unsigned long      i, nibbles;
+    int                x;
+
+    FT_UNUSED( lineno );        /* only used in debug mode */
+
+
+    nibbles = glyph->bpr << 1;
+    bp      = glyph->bitmap + p->row * glyph->bpr;
+
+    if ( nibbles > linelen )
+    {
+      FT_TRACE2(( "bdf_parse_bitmap_: " ACMSG16, glyph->encoding ));
+      nibbles = linelen;
+    }
+
+    for ( i = 0; i < nibbles; i++ )
+    {
+      /* char to hex without checks */
+      x  = line[i];
+      x += ( x & 0x40 ) * 9 >> 6;  /* for [A-Fa-f] */
+      x &= 0x0F;
+
+      if ( i & 1 )
+        *bp++ |= x;
+      else
+        *bp    = x << 4;
+    }
+
+    p->row++;
+
+    /* When done, go back to parsing glyphs */
+    if ( p->row >= (unsigned long)glyph->bbx.height )
+      *next = bdf_parse_glyphs_;
+
+    return FT_Err_Ok;
+  }
+
+
+  /* Actually parse the glyph info. */
   static FT_Error
   bdf_parse_glyphs_( char*          line,
                      unsigned long  linelen,
@@ -1283,27 +1346,19 @@
                      void*          call_data,
                      void*          client_data )
   {
-    int                c, mask_index;
-    char*              s;
-    unsigned char*     bp;
-    unsigned long      i, slen, nibbles;
-
-    bdf_line_func_t_*  next;
-    bdf_parse_t_*      p;
+    bdf_line_func_t_*  next = (bdf_line_func_t_ *)call_data;
+    bdf_parse_t_*      p    = (bdf_parse_t_ *)    client_data;
+    bdf_font_t*        font = p->font;
     bdf_glyph_t*       glyph;
-    bdf_font_t*        font;
 
-    FT_Memory          memory;
-    FT_Error           error = FT_Err_Ok;
+    FT_Memory          memory = font->memory;
+    FT_Error           error  = FT_Err_Ok;
+
+    char*              s;
+    unsigned long      slen;
 
     FT_UNUSED( lineno );        /* only used in debug mode */
 
-
-    next = (bdf_line_func_t_ *)call_data;
-    p    = (bdf_parse_t_ *)    client_data;
-
-    font   = p->font;
-    memory = font->memory;
 
     /* Check for a comment. */
     if ( _bdf_strncmp( line, "COMMENT", 7 ) == 0 )
@@ -1529,10 +1584,6 @@
         }
       }
 
-      /* Clear the flags that might be added when width and height are */
-      /* checked for consistency.                                      */
-      p->flags &= ~( BDF_GLYPH_WIDTH_CHECK_ | BDF_GLYPH_HEIGHT_CHECK_ );
-
       p->flags |= BDF_ENCODING_;
 
       goto Exit;
@@ -1546,64 +1597,6 @@
       glyph = font->unencoded + ( font->unencoded_used - 1 );
     else
       glyph = font->glyphs + ( font->glyphs_used - 1 );
-
-    /* Check whether a bitmap is being constructed. */
-    if ( p->flags & BDF_BITMAP_ )
-    {
-      /* If there are more rows than are specified in the glyph metrics, */
-      /* ignore the remaining lines.                                     */
-      if ( p->row >= (unsigned long)glyph->bbx.height )
-      {
-        if ( !( p->flags & BDF_GLYPH_HEIGHT_CHECK_ ) )
-        {
-          FT_TRACE2(( "bdf_parse_glyphs_: " ACMSG13, glyph->encoding ));
-          p->flags |= BDF_GLYPH_HEIGHT_CHECK_;
-        }
-
-        goto Exit;
-      }
-
-      /* Only collect the number of nibbles indicated by the glyph     */
-      /* metrics.  If there are more columns, they are simply ignored. */
-      nibbles = glyph->bpr << 1;
-      bp      = glyph->bitmap + p->row * glyph->bpr;
-
-      for ( i = 0; i < nibbles; i++ )
-      {
-        c = line[i];
-        if ( !sbitset( hdigits, c ) )
-          break;
-        *bp = (FT_Byte)( ( *bp << 4 ) + a2i[c] );
-        if ( i + 1 < nibbles && ( i & 1 ) )
-          *++bp = 0;
-      }
-
-      /* If any line has not enough columns,            */
-      /* indicate they have been padded with zero bits. */
-      if ( i < nibbles                            &&
-           !( p->flags & BDF_GLYPH_WIDTH_CHECK_ ) )
-      {
-        FT_TRACE2(( "bdf_parse_glyphs_: " ACMSG16, glyph->encoding ));
-        p->flags       |= BDF_GLYPH_WIDTH_CHECK_;
-      }
-
-      /* Remove possible garbage at the right. */
-      mask_index = ( glyph->bbx.width * p->font->bpp ) & 7;
-      if ( glyph->bbx.width )
-        *bp &= nibble_mask[mask_index];
-
-      /* If any line has extra columns, indicate they have been removed. */
-      if ( i == nibbles                           &&
-           sbitset( hdigits, line[nibbles] )      &&
-           !( p->flags & BDF_GLYPH_WIDTH_CHECK_ ) )
-      {
-        FT_TRACE2(( "bdf_parse_glyphs_: " ACMSG14, glyph->encoding ));
-        p->flags       |= BDF_GLYPH_WIDTH_CHECK_;
-      }
-
-      p->row++;
-      goto Exit;
-    }
 
     /* Expect the SWIDTH (scalable width) field next. */
     if ( _bdf_strncmp( line, "SWIDTH", 6 ) == 0 )
@@ -1642,6 +1635,10 @@
       p->flags |= BDF_DWIDTH_;
       goto Exit;
     }
+
+    /* Do not leak the bitmap or reset its size */
+    if ( p->flags & BDF_BITMAP_ )
+      goto Exit;
 
     /* Expect the BBX field next. */
     if ( _bdf_strncmp( line, "BBX", 3 ) == 0 )
@@ -1728,11 +1725,13 @@
       else
         glyph->bytes = (unsigned short)bitmap_size;
 
-      if ( FT_ALLOC( glyph->bitmap, glyph->bytes ) )
+      if ( !bitmap_size || FT_ALLOC( glyph->bitmap, glyph->bytes ) )
         goto Exit;
 
+      p->glyph  = glyph;
       p->row    = 0;
       p->flags |= BDF_BITMAP_;
+      *next     = bdf_parse_bitmap_;
 
       goto Exit;
     }
@@ -1762,19 +1761,18 @@
                          void*          call_data,
                          void*          client_data )
   {
+    bdf_line_func_t_*  next = (bdf_line_func_t_ *)call_data;
+    bdf_parse_t_*      p    = (bdf_parse_t_ *)    client_data;
+
+    FT_Error           error = FT_Err_Ok;
+
     unsigned long      vlen;
-    bdf_line_func_t_*  next;
-    bdf_parse_t_*      p;
     char*              name;
     char*              value;
     char               nbuf[BUFSIZE];
-    FT_Error           error = FT_Err_Ok;
 
     FT_UNUSED( lineno );
 
-
-    next = (bdf_line_func_t_ *)call_data;
-    p    = (bdf_parse_t_ *)    client_data;
 
     /* Check for the end of the properties. */
     if ( _bdf_strncmp( line, "ENDPROPERTIES", 13 ) == 0 )
@@ -1865,23 +1863,17 @@
                     void*          call_data,
                     void*          client_data )
   {
-    unsigned long      slen;
-    bdf_line_func_t_*  next;
-    bdf_parse_t_*      p;
-    bdf_font_t*        font;
-    char               *s;
+    bdf_line_func_t_*  next = (bdf_line_func_t_ *)call_data;
+    bdf_parse_t_*      p    = (bdf_parse_t_ *)    client_data;
 
-    FT_Memory          memory = NULL;
+    FT_Memory          memory = p->memory;
     FT_Error           error  = FT_Err_Ok;
+
+    unsigned long      slen;
+    char               *s;
 
     FT_UNUSED( lineno );            /* only used in debug mode */
 
-
-    next = (bdf_line_func_t_ *)call_data;
-    p    = (bdf_parse_t_ *)    client_data;
-
-    if ( p->font )
-      memory = p->font->memory;
 
     /* Check for a comment.  This is done to handle those fonts that have */
     /* comments before the STARTFONT line for some reason.                */
@@ -1904,8 +1896,6 @@
 
     if ( !( p->flags & BDF_START_ ) )
     {
-      memory = p->memory;
-
       if ( _bdf_strncmp( line, "STARTFONT", 9 ) != 0 )
       {
         /* we don't emit an error message since this code gets */
@@ -1915,27 +1905,24 @@
       }
 
       p->flags = BDF_START_;
-      font = p->font = NULL;
 
-      if ( FT_NEW( font ) )
+      if ( FT_NEW( p->font ) )
         goto Exit;
-      p->font = font;
 
-      font->memory = p->memory;
+      p->font->memory = memory;
 
       { /* setup */
+        bdf_property_t*  prop    = (bdf_property_t*)bdf_properties_;
+        FT_Hash          proptbl = &p->font->proptbl;
         size_t           i;
-        bdf_property_t*  prop;
 
 
-        error = ft_hash_str_init( &(font->proptbl), memory );
+        error = ft_hash_str_init( proptbl, memory );
         if ( error )
           goto Exit;
-        for ( i = 0, prop = (bdf_property_t*)bdf_properties_;
-              i < num_bdf_properties_; i++, prop++ )
+        for ( i = 0; i < num_bdf_properties_; i++, prop++ )
         {
-          error = ft_hash_str_insert( prop->name, i,
-                                      &(font->proptbl), memory );
+          error = ft_hash_str_insert( prop->name, i, proptbl, memory );
           if ( error )
             goto Exit;
         }
