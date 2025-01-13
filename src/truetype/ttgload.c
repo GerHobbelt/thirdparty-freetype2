@@ -2596,7 +2596,7 @@
         glyph->metrics.horiAdvance = FT_MulFix( advanceX, x_scale );
         glyph->metrics.vertAdvance = FT_MulFix( advanceY, y_scale );
 
-        return error;
+        goto Exit;
       }
 
       FT_TRACE3(( "Failed to load SVG glyph\n" ));
@@ -2624,10 +2624,6 @@
       goto Done;
     }
 
-    glyph->format        = FT_GLYPH_FORMAT_OUTLINE;
-    glyph->num_subglyphs = 0;
-    glyph->outline.flags = 0;
-
     /* main loading loop */
     error = load_truetype_glyph( &loader, glyph_index, 0, FALSE );
     if ( !error )
@@ -2639,8 +2635,17 @@
       }
       else
       {
+        glyph->format         = FT_GLYPH_FORMAT_OUTLINE;
+
         glyph->outline        = loader.gloader->base.outline;
         glyph->outline.flags &= ~FT_OUTLINE_SINGLE_PASS;
+
+        /* Set the `high precision' bit flag.  This is _critical_ to   */
+        /* get correct output for monochrome TrueType glyphs at all    */
+        /* sizes using the bytecode interpreter.                       */
+        if ( !( load_flags & FT_LOAD_NO_SCALE ) &&
+             size->metrics->y_ppem < 24         )
+          glyph->outline.flags |= FT_OUTLINE_HIGH_PRECISION;
 
         /* Translate array so that (0,0) is the glyph's origin.  Note  */
         /* that this behaviour is independent on the value of bit 1 of */
@@ -2689,14 +2694,6 @@
 
       error = compute_glyph_metrics( &loader, glyph_index );
     }
-
-    /* Set the `high precision' bit flag.                           */
-    /* This is _critical_ to get correct output for monochrome      */
-    /* TrueType glyphs at all sizes using the bytecode interpreter. */
-    /*                                                              */
-    if ( !( load_flags & FT_LOAD_NO_SCALE ) &&
-         size->metrics->y_ppem < 24         )
-      glyph->outline.flags |= FT_OUTLINE_HIGH_PRECISION;
 
     FT_TRACE1(( "  subglyphs = %u, contours = %hu, points = %hu,"
                 " flags = 0x%.3x\n",

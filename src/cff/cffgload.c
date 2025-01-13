@@ -239,24 +239,12 @@
     else if ( glyph_index >= cff->num_glyphs )
       return FT_THROW( Invalid_Argument );
 
-    if ( load_flags & FT_LOAD_NO_RECURSE )
-      load_flags |= FT_LOAD_NO_SCALE | FT_LOAD_NO_HINTING;
-
-    glyph->x_scale = 0x10000L;
-    glyph->y_scale = 0x10000L;
-    if ( size )
-    {
-      glyph->x_scale = size->root.metrics.x_scale;
-      glyph->y_scale = size->root.metrics.y_scale;
-    }
-
 #ifdef TT_CONFIG_OPTION_EMBEDDED_BITMAPS
 
     /* try to load embedded bitmap if any              */
     /*                                                 */
     /* XXX: The convention should be emphasized in     */
     /*      the documents because it can be confusing. */
-    if ( size )
     {
       CFF_Face      cff_face = (CFF_Face)size->root.face;
       SFNT_Service  sfnt     = (SFNT_Service)cff_face->sfnt;
@@ -424,6 +412,9 @@
     /* if we have a CID subfont, use its matrix (which has already */
     /* been multiplied with the root matrix)                       */
 
+    glyph->x_scale = size->root.metrics.x_scale;
+    glyph->y_scale = size->root.metrics.y_scale;
+
     /* this scaling is only relevant if the PS hinter isn't active */
     if ( cff->num_subfonts )
     {
@@ -462,7 +453,6 @@
 
     glyph->hint        = hinting;
     glyph->scaled      = scaled;
-    glyph->root.format = FT_GLYPH_FORMAT_OUTLINE;  /* by default */
 
     {
 #ifdef CFF_CONFIG_OPTION_OLD_ENGINE
@@ -597,10 +587,8 @@
     {
       /* Now, set the metrics -- this is rather simple, as   */
       /* the left side bearing is the xMin, and the top side */
-      /* bearing the yMax.                                   */
-
-      /* For composite glyphs, return only left side bearing and */
-      /* advance width.                                          */
+      /* bearing the yMax. For composite glyphs, return only */
+      /* left side bearing and advance width.                */
       if ( load_flags & FT_LOAD_NO_RECURSE )
       {
         FT_Slot_Internal  internal = glyph->root.internal;
@@ -618,6 +606,12 @@
         FT_Glyph_Metrics*  metrics = &glyph->root.metrics;
         FT_Bool            has_vertical_info;
 
+
+        glyph->root.format = FT_GLYPH_FORMAT_OUTLINE;
+
+        glyph->root.outline.flags = FT_OUTLINE_REVERSE_FILL;
+        if ( size && size->root.metrics.y_ppem < 24 )
+          glyph->root.outline.flags |= FT_OUTLINE_HIGH_PRECISION;
 
         if ( face->horizontal.number_Of_HMetrics )
         {
@@ -671,14 +665,6 @@
         }
 
         glyph->root.linearVertAdvance = metrics->vertAdvance;
-
-        glyph->root.format = FT_GLYPH_FORMAT_OUTLINE;
-
-        glyph->root.outline.flags = 0;
-        if ( size && size->root.metrics.y_ppem < 24 )
-          glyph->root.outline.flags |= FT_OUTLINE_HIGH_PRECISION;
-
-        glyph->root.outline.flags |= FT_OUTLINE_REVERSE_FILL;
 
         /* apply the font matrix, if any */
         if ( font_matrix.xx != 0x10000L || font_matrix.yy != 0x10000L ||
