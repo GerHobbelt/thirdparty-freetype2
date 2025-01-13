@@ -1115,8 +1115,7 @@
 
 
     /* First, check whether the property already exists in the font. */
-    if ( ( propid = ft_hash_str_lookup( name,
-                                        (FT_Hash)font->internal ) ) != NULL )
+    if ( ( propid = ft_hash_str_lookup( name, font->internal ) ) != NULL )
     {
       /* The property already exists in the font, so simply replace */
       /* the value of the property with the current value.          */
@@ -1210,7 +1209,7 @@
       /* Add the property to the font property table. */
       error = ft_hash_str_insert( fp->name,
                                   font->props_used,
-                                  (FT_Hash)font->internal,
+                                  font->internal,
                                   memory );
       if ( error )
         goto Exit;
@@ -1942,9 +1941,9 @@
         }
       }
 
-      if ( FT_QALLOC( p->font->internal, sizeof ( FT_HashRec ) ) )
+      if ( FT_QNEW( p->font->internal ) )
         goto Exit;
-      error = ft_hash_str_init( (FT_Hash)p->font->internal, memory );
+      error = ft_hash_str_init( p->font->internal, memory );
       if ( error )
         goto Exit;
       p->font->spacing      = p->opts->font_spacing;
@@ -1975,7 +1974,7 @@
       {
         p->font->props_size = 0;
 
-        FT_ERROR(( "bdf_parse_glyphs_: " ERRMSG5, lineno, "STARTPROPERTIES" ));
+        FT_ERROR(( "bdf_parse_start_: " ERRMSG5, lineno, "STARTPROPERTIES" ));
         error = FT_THROW( Invalid_Argument );
         goto Exit;
       }
@@ -2127,7 +2126,7 @@
                                  nbuf, lineno );
       if ( error )
         goto Exit;
-      FT_TRACE2(( "bdf_parse_properties_: " ACMSG1, p->font->bbx.ascent ));
+      FT_TRACE2(( "bdf_parse_start_: " ACMSG1, p->font->bbx.ascent ));
 
       p->font->font_descent = p->font->bbx.descent;
       ft_snprintf( nbuf, BUFSIZE, "%hd", p->font->bbx.descent );
@@ -2135,7 +2134,7 @@
                                  nbuf, lineno );
       if ( error )
         goto Exit;
-      FT_TRACE2(( "bdf_parse_properties_: " ACMSG2, p->font->bbx.descent ));
+      FT_TRACE2(( "bdf_parse_start_: " ACMSG2, p->font->bbx.descent ));
 
       *next = bdf_parse_glyphs_;
 
@@ -2311,7 +2310,7 @@
     /* Free up the internal hash table of property names. */
     if ( font->internal )
     {
-      ft_hash_str_free( (FT_Hash)font->internal, memory );
+      ft_hash_str_free( font->internal, memory );
       FT_FREE( font->internal );
     }
 
@@ -2369,7 +2368,7 @@
     if ( font == NULL || font->props_size == 0 || name == NULL || *name == 0 )
       return 0;
 
-    propid = ft_hash_str_lookup( name, (FT_Hash)font->internal );
+    propid = ft_hash_str_lookup( name, font->internal );
 
     return propid ? ( font->props + *propid ) : 0;
   }
