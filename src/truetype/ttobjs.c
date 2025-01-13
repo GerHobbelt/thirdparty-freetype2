@@ -950,11 +950,8 @@
 
       FT_TRACE4(( "Executing `fpgm' table.\n" ));
       error = face->interpreter( exec );
-#ifdef FT_DEBUG_LEVEL_TRACE
-      if ( error )
-        FT_TRACE4(( "  interpretation failed with error code 0x%x\n",
-                    error ));
-#endif
+      FT_TRACE4(( error ? "  failed (error code 0x%x)\n" : "",
+                  error ));
     }
     else
       error = FT_Err_Ok;
@@ -1036,11 +1033,8 @@
 
       FT_TRACE4(( "Executing `prep' table.\n" ));
       error = face->interpreter( exec );
-#ifdef FT_DEBUG_LEVEL_TRACE
-      if ( error )
-        FT_TRACE4(( "  interpretation failed with error code 0x%x\n",
-                    error ));
-#endif
+      FT_TRACE4(( error ? "  failed (error code 0x%x)\n" : "",
+                  error ));
     }
     else
       error = FT_Err_Ok;
