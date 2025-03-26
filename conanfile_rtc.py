@@ -3,7 +3,7 @@ from conans import ConanFile
 
 class FreeTypeConan(ConanFile):
     name = "freetype"
-    version = "2.13.0"
+    version = "2.13.3"
     url = "https://github.com/Esri/freetype/tree/runtimecore"
     license = "https://github.com/Esri/freetype/blob/runtimecore/docs/FTL.TXT"
     description = "FreeType is a freely available software library to render fonts."
