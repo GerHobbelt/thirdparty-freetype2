@@ -37,6 +37,7 @@ files {
   "src/base/ftfntfmt.c",
   "src/base/ftfstype.c",
   "src/base/ftgloadr.c",
+  "src/base/ftglyph.c",
   "src/base/fthash.c",
   "src/base/ftinit.c",
   "src/base/ftlcdfil.c",
