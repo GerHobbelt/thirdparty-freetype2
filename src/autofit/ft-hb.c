@@ -16,6 +16,10 @@
  */
 
 
+#if !defined( _WIN32 ) && !defined( _GNU_SOURCE )
+#  define _GNU_SOURCE  1  /* for RTLD_DEFAULT */
+#endif
+
 #include <freetype/freetype.h>
 #include <freetype/internal/ftmemory.h>
 
@@ -96,8 +100,11 @@
 
 #else /* !_WIN32 */
 
-    lib = RTLD_DEFAULT;
+#  ifdef RTLD_DEFAULT
+    lib             = RTLD_DEFAULT;
     version_atleast = DLSYM( lib, hb_version_atleast );
+#  endif
+
     if ( !version_atleast )
     {
       /* Load the HarfBuzz library.

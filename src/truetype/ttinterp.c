@@ -302,14 +302,13 @@
                    TT_Face         face,
                    TT_Size         size )
   {
-    FT_Int          i;
-    TT_MaxProfile*  maxp;
-    FT_Error        error;
-    FT_Memory       memory = exec->memory;
+    FT_Int     i;
+    FT_Long    stackSize;
+    FT_Error   error;
+    FT_Memory  memory = exec->memory;
 
 
     exec->face = face;
-    maxp       = &face->max_profile;
     exec->size = size;
 
     if ( size )
@@ -350,11 +349,10 @@
 
     /* XXX: We reserve a little more elements on the stack to deal safely */
     /*      with broken fonts like arialbs, courbs, timesbs, etc.         */
-    if ( FT_QRENEW_ARRAY( exec->stack,
-                          exec->stackSize,
-                          maxp->maxStackElements + 32 ) )
+    stackSize = face->max_profile.maxStackElements + 32;
+    if ( FT_QRENEW_ARRAY( exec->stack, exec->stackSize, stackSize ) )
       return error;
-    exec->stackSize = maxp->maxStackElements + 32;
+    exec->stackSize = stackSize;
 
     /* free previous glyph code range */
     FT_FREE( exec->glyphIns );

@@ -2941,10 +2941,14 @@
     } manageCvt;
 
 
-    face->doblend = FALSE;
-
     if ( !face->blend )
     {
+      if ( !num_coords )
+      {
+        face->doblend = FALSE;
+        goto Exit;
+      }
+
       if ( FT_SET_ERROR( TT_Get_MM_Var( FT_FACE( face ), NULL ) ) )
         goto Exit;
     }
@@ -3057,11 +3061,7 @@
 
       /* return value -1 indicates `no change' */
       if ( !have_diff )
-      {
-        face->doblend = TRUE;
-
         return -1;
-      }
 
       for ( ; i < mmvar->num_axis; i++ )
       {
@@ -3090,7 +3090,15 @@
                         blend->normalizedcoords,
                         blend->coords );
 
-    face->doblend = TRUE;
+    face->doblend = FALSE;
+    for ( i = 0; i < blend->num_axis; i++ )
+    {
+      if ( blend->normalizedcoords[i] )
+      {
+        face->doblend = TRUE;
+        break;
+      }
+    }
 
     if ( face->cvt )
     {
@@ -3158,7 +3166,24 @@
                    FT_UInt    num_coords,
                    FT_Fixed*  coords )
   {
-    return tt_set_mm_blend( (TT_Face)face, num_coords, coords, 1 );
+    FT_Error  error = FT_Err_Ok;
+
+
+    error = tt_set_mm_blend( (TT_Face)face, num_coords, coords, 1 );
+    if ( error == FT_Err_Ok )
+    {
+      FT_UInt  i;
+
+
+      for ( i = 0; i < num_coords; i++ )
+        if ( coords[i] )
+        {
+          error = -2; /* -2 means is_variable. */
+          break;
+        }
+    }
+
+    return error;
   }
 
 
@@ -3379,6 +3404,15 @@
     if ( error )
       goto Exit;
 
+    for ( i = 0; i < num_coords; i++ )
+    {
+      if ( normalized[i] )
+      {
+        error = -2; /* -2 means is_variable. */
+        break;
+      }
+    }
+
   Exit:
     FT_FREE( normalized );
     return error;
@@ -3415,10 +3449,12 @@
                      FT_UInt    num_coords,
                      FT_Fixed*  coords )
   {
-    TT_Face   ttface = (TT_Face)face;
-    FT_Error  error  = FT_Err_Ok;
-    GX_Blend  blend;
-    FT_UInt   i, nc;
+    TT_Face       ttface = (TT_Face)face;
+    FT_Error      error  = FT_Err_Ok;
+    GX_Blend      blend;
+    FT_MM_Var*    mmvar;
+    FT_Var_Axis*  a;
+    FT_UInt       i, nc;
 
 
     if ( !ttface->blend )
@@ -3446,19 +3482,21 @@
       nc = blend->num_axis;
     }
 
+    mmvar = blend->mmvar;
+    a     = mmvar->axis;
     if ( ttface->doblend )
     {
-      for ( i = 0; i < nc; i++ )
+      for ( i = 0; i < nc; i++, a++ )
         coords[i] = blend->coords[i];
     }
     else
     {
-      for ( i = 0; i < nc; i++ )
-        coords[i] = 0;
+      for ( i = 0; i < nc; i++, a++ )
+        coords[i] = a->def;
     }
 
-    for ( ; i < num_coords; i++ )
-      coords[i] = 0;
+    for ( ; i < num_coords; i++, a++ )
+      coords[i] = a->def;
 
     return FT_Err_Ok;
   }
@@ -3550,6 +3588,9 @@
         goto Exit;
       error = TT_Set_Var_Design( face, 0, NULL );
     }
+
+    if ( error == -1 || error == -2 )
+      error = FT_Err_Ok;
 
   Exit:
     return error;
@@ -4359,6 +4400,8 @@
       points_org[j].y = FT_intToFixed( outline->points[j].y );
     }
 
+    p = stream->cursor;
+
     tupleCount &= GX_TC_TUPLE_COUNT_MASK;
     for ( i = 0; i < tupleCount; i++ )
     {
@@ -4373,20 +4416,29 @@
       tupleScalars = blend->tuplescalars;
 
       /* Enter frame for four bytes. */
-      if ( stream->limit - stream->cursor < 4 )
+      if ( 4 > stream->limit - p )
       {
         FT_TRACE2(( "TT_Vary_Apply_Glyph_Deltas:"
                     " invalid glyph variation array header\n" ));
         error = FT_THROW( Invalid_Table );
         goto Exit;
       }
-      tupleDataSize = FT_GET_USHORT();
-      tupleIndex    = FT_GET_USHORT();
+
+      tupleDataSize = FT_NEXT_USHORT( p );
+      tupleIndex    = FT_NEXT_USHORT( p );
 
       if ( tupleIndex & GX_TI_EMBEDDED_TUPLE_COORD )
       {
+        if ( 2 * blend->num_axis > (FT_UInt)( stream->limit - p ) )
+        {
+          FT_TRACE2(( "TT_Vary_Apply_Glyph_Deltas:"
+                      " invalid glyph variation array header\n" ));
+          error = FT_THROW( Invalid_Table );
+          goto Exit;
+        }
+
         for ( j = 0; j < blend->num_axis; j++ )
-          peak_coords[j] = FT_fdot14ToFixed( FT_GET_SHORT() );
+          peak_coords[j] = FT_fdot14ToFixed( FT_NEXT_SHORT( p ) );
 
         tuple_coords = peak_coords;
         tupleScalars = NULL;
@@ -4403,7 +4455,8 @@
         }
 
         tuple_coords = blend->tuplecoords +
-            ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) * blend->num_axis;
+                         ( tupleIndex & GX_TI_TUPLE_INDEX_MASK ) *
+                         blend->num_axis;
       }
       else
       {
@@ -4416,10 +4469,18 @@
 
       if ( tupleIndex & GX_TI_INTERMEDIATE_TUPLE )
       {
+        if ( 4 * blend->num_axis > (FT_UInt)( stream->limit - p ) )
+        {
+          FT_TRACE2(( "TT_Vary_Apply_Glyph_Deltas:"
+                      " invalid glyph variation array header\n" ));
+          error = FT_THROW( Invalid_Table );
+          goto Exit;
+        }
+
         for ( j = 0; j < blend->num_axis; j++ )
-          im_start_coords[j] = FT_fdot14ToFixed( FT_GET_SHORT() );
+          im_start_coords[j] = FT_fdot14ToFixed( FT_NEXT_SHORT( p ) );
         for ( j = 0; j < blend->num_axis; j++ )
-          im_end_coords[j] = FT_fdot14ToFixed( FT_GET_SHORT() );
+          im_end_coords[j] = FT_fdot14ToFixed( FT_NEXT_SHORT( p ) );
 
         tupleScalars = NULL;
       }
