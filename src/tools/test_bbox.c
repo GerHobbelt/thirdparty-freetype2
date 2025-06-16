@@ -151,7 +151,7 @@
              XVAL( bbox.yMin ),
              XVAL( bbox.xMax ),
              XVAL( bbox.yMax ) );
-    printf( "cbox_hex = [%08X %08X %08X %08X]\n",
+    printf( "cbox_hex = [%08lX %08lX %08lX %08lX]\n",
              bbox.xMin, bbox.yMin, bbox.xMax, bbox.yMax );
 
 
@@ -166,7 +166,7 @@
              XVAL( bbox.yMin ),
              XVAL( bbox.xMax ),
              XVAL( bbox.yMax ) );
-    printf( "bbox_hex = [%08X %08X %08X %08X]\n",
+    printf( "bbox_hex = [%08lX %08lX %08lX %08lX]\n",
              bbox.xMin, bbox.yMin, bbox.xMax, bbox.yMax );
   }
 
