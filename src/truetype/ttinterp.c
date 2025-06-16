@@ -90,59 +90,29 @@
 #define FAILURE  1
 
 
+  /* The default value for `scan_control' is documented as FALSE in the */
+  /* TrueType specification.  This is confusing since it implies a      */
+  /* Boolean value.  However, this is not the case, thus both the       */
+  /* default values of our `scan_type' and `scan_control' fields (which */
+  /* the documentation's `scan_control' variable is split into) are     */
+  /* zero.                                                              */
+
+  const TT_GraphicsState  tt_default_graphics_state =
+  {
+    0, 0, 0,  1, 1, 1,
+    { 0x4000, 0 }, { 0x4000, 0 }, { 0x4000, 0 },
+    1, 1,
+
+    64, 68, 0, 0, 9, 3,
+    TRUE, 0, FALSE, 0
+  };
+
+
   /**************************************************************************
    *
    *                       CODERANGE FUNCTIONS
    *
    */
-
-
-  /**************************************************************************
-   *
-   * @Function:
-   *   TT_Goto_CodeRange
-   *
-   * @Description:
-   *   Switches to a new code range (updates the code related elements in
-   *   `exec', and `IP').
-   *
-   * @Input:
-   *   range ::
-   *     The new execution code range.
-   *
-   *   IP ::
-   *     The new IP in the new code range.
-   *
-   * @InOut:
-   *   exec ::
-   *     The target execution context.
-   */
-  FT_LOCAL_DEF( void )
-  TT_Goto_CodeRange( TT_ExecContext  exec,
-                     FT_Int          range,
-                     FT_Long         IP )
-  {
-    TT_CodeRange*  coderange;
-
-
-    FT_ASSERT( range >= 1 && range <= 3 );
-
-    coderange = &exec->codeRangeTable[range - 1];
-
-    FT_ASSERT( coderange->base );
-
-    /* NOTE: Because the last instruction of a program may be a CALL */
-    /*       which will return to the first byte *after* the code    */
-    /*       range, we test for IP <= Size instead of IP < Size.     */
-    /*                                                               */
-    FT_ASSERT( IP <= coderange->size );
-
-    exec->code     = coderange->base;
-    exec->codeSize = coderange->size;
-    exec->IP       = IP;
-    exec->curRange = range;
-    exec->iniRange = range;
-  }
 
 
   /**************************************************************************
@@ -170,13 +140,19 @@
   FT_LOCAL_DEF( void )
   TT_Set_CodeRange( TT_ExecContext  exec,
                     FT_Int          range,
-                    void*           base,
+                    FT_Byte*        base,
                     FT_Long         length )
   {
     FT_ASSERT( range >= 1 && range <= 3 );
 
-    exec->codeRangeTable[range - 1].base = (FT_Byte*)base;
+    exec->codeRangeTable[range - 1].base = base;
     exec->codeRangeTable[range - 1].size = length;
+
+    exec->code     = base;
+    exec->codeSize = length;
+    exec->IP       = 0;
+    exec->curRange = range;
+    exec->iniRange = range;
   }
 
 
@@ -311,41 +287,11 @@
     exec->face = face;
     exec->size = size;
 
-    if ( size )
-    {
-      exec->numFDefs   = size->num_function_defs;
-      exec->maxFDefs   = size->max_function_defs;
-      exec->numIDefs   = size->num_instruction_defs;
-      exec->maxIDefs   = size->max_instruction_defs;
-      exec->FDefs      = size->function_defs;
-      exec->IDefs      = size->instruction_defs;
-      exec->pointSize  = size->point_size;
-      exec->tt_metrics = size->ttmetrics;
-      exec->metrics    = *size->metrics;
+    exec->cvtSize = size->cvt_size;
+    exec->cvt     = size->cvt;
 
-      exec->maxFunc    = size->max_func;
-      exec->maxIns     = size->max_ins;
-
-      for ( i = 0; i < TT_MAX_CODE_RANGES; i++ )
-        exec->codeRangeTable[i] = size->codeRangeTable[i];
-
-      /* set graphics state */
-      exec->GS = size->GS;
-
-      exec->cvtSize = size->cvt_size;
-      exec->cvt     = size->cvt;
-
-      exec->storeSize = size->storage_size;
-      exec->storage   = size->storage;
-
-      exec->twilight  = size->twilight;
-
-      /* In case of multi-threading it can happen that the old size object */
-      /* no longer exists, thus we must clear all glyph zone references.   */
-      FT_ZERO( &exec->zp0 );
-      exec->zp1 = exec->zp0;
-      exec->zp2 = exec->zp0;
-    }
+    exec->storeSize = size->storage_size;
+    exec->storage   = size->storage;
 
     /* XXX: We reserve a little more elements on the stack to deal safely */
     /*      with broken fonts like arialbs, courbs, timesbs, etc.         */
@@ -358,17 +304,21 @@
     FT_FREE( exec->glyphIns );
     exec->glyphSize = 0;
 
-    exec->pts.n_points   = 0;
-    exec->pts.n_contours = 0;
+    for ( i = 0; i < TT_MAX_CODE_RANGES; i++ )
+      exec->codeRangeTable[i] = size->codeRangeTable[i];
 
-    exec->zp1 = exec->pts;
-    exec->zp2 = exec->pts;
-    exec->zp0 = exec->pts;
+    exec->numFDefs   = size->num_function_defs;
+    exec->maxFDefs   = size->max_function_defs;
+    exec->numIDefs   = size->num_instruction_defs;
+    exec->maxIDefs   = size->max_instruction_defs;
+    exec->FDefs      = size->function_defs;
+    exec->IDefs      = size->instruction_defs;
+    exec->maxFunc    = size->max_func;
+    exec->maxIns     = size->max_ins;
 
-    exec->callTop = 0;
-    exec->top     = 0;
-
-    exec->instruction_trap = FALSE;
+    exec->pointSize  = size->point_size;
+    exec->tt_metrics = size->ttmetrics;
+    exec->metrics    = *size->metrics;
 
     return FT_Err_Ok;
   }
@@ -400,9 +350,20 @@
     FT_Int  i;
 
 
-    /* XXX: Will probably disappear soon with all the code range */
-    /*      management, which is now rather obsolete.            */
-    /*                                                           */
+    /* UNDOCUMENTED!                                            */
+    /* Only these GS values can be modified by the CVT program. */
+
+    size->GS.minimum_distance    = exec->GS.minimum_distance;
+    size->GS.control_value_cutin = exec->GS.control_value_cutin;
+    size->GS.single_width_cutin  = exec->GS.single_width_cutin;
+    size->GS.single_width_value  = exec->GS.single_width_value;
+    size->GS.delta_base          = exec->GS.delta_base;
+    size->GS.delta_shift         = exec->GS.delta_shift;
+    size->GS.auto_flip           = exec->GS.auto_flip;
+    size->GS.instruct_control    = exec->GS.instruct_control;
+    size->GS.scan_control        = exec->GS.scan_control;
+    size->GS.scan_type           = exec->GS.scan_type;
+
     size->num_function_defs    = exec->numFDefs;
     size->num_instruction_defs = exec->numIDefs;
 
@@ -430,54 +391,27 @@
    *   TrueType error code.  0 means success.
    */
   FT_LOCAL_DEF( FT_Error )
-  TT_Run_Context( TT_ExecContext  exec )
+  TT_Run_Context( TT_ExecContext  exec,
+                  TT_Size         size )
   {
-    TT_Goto_CodeRange( exec, tt_coderange_glyph, 0 );
-
     exec->zp0 = exec->pts;
     exec->zp1 = exec->pts;
     exec->zp2 = exec->pts;
 
-    exec->GS.gep0 = 1;
-    exec->GS.gep1 = 1;
-    exec->GS.gep2 = 1;
+    exec->twilight = size->twilight;
 
-    exec->GS.projVector.x = 0x4000;
-    exec->GS.projVector.y = 0x0000;
-
-    exec->GS.freeVector = exec->GS.projVector;
-    exec->GS.dualVector = exec->GS.projVector;
-
-    exec->GS.round_state = 1;
-    exec->GS.loop        = 1;
+    /* reset graphics state */
+    exec->GS = size->GS;
 
     /* some glyphs leave something on the stack. so we clean it */
     /* before a new execution.                                  */
     exec->top     = 0;
     exec->callTop = 0;
 
+    exec->instruction_trap = FALSE;
+
     return exec->face->interpreter( exec );
   }
-
-
-  /* The default value for `scan_control' is documented as FALSE in the */
-  /* TrueType specification.  This is confusing since it implies a      */
-  /* Boolean value.  However, this is not the case, thus both the       */
-  /* default values of our `scan_type' and `scan_control' fields (which */
-  /* the documentation's `scan_control' variable is split into) are     */
-  /* zero.                                                              */
-
-  const TT_GraphicsState  tt_default_graphics_state =
-  {
-    0, 0, 0,
-    { 0x4000, 0 },
-    { 0x4000, 0 },
-    { 0x4000, 0 },
-
-    1, 64, 1,
-    TRUE, 68, 0, 0, 9, 3,
-    0, FALSE, 0, 1, 1, 1
-  };
 
 
   /* documentation is in ttinterp.h */
