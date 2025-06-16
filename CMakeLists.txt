@@ -109,7 +109,7 @@
 #   support).
 
 # CMake 3.12 provides for IMPORTED targets for common libraries like zlib, libpng and bzip2
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.12...3.31.0)
 
 include(CheckIncludeFile)
 include(CMakeDependentOption)
@@ -241,7 +241,7 @@ endif ()
 include(FindPkgConfig)
 
 if (NOT FT_DISABLE_HARFBUZZ)
-  set(HARFBUZZ_MIN_VERSION "2.0.0")
+  set(HARFBUZZ_MIN_VERSION "2.6.8")
   if (TARGET harfbuzz)
     # Don't find harfbuzz when it is being built currently (for vendoring purposes)
     add_library(HarfBuzz::HarfBuzz ALIAS harfbuzz)

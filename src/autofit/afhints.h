@@ -222,6 +222,9 @@ FT_BEGIN_HEADER
   /* the distance to the next point is very small */
 #define AF_FLAG_NEAR  ( 1U << 5 )
 
+  /* prevent the auto-hinter from adding such a point to a segment */
+#define AF_FLAG_IGNORE  ( 1U << 6 )
+
 
   /* edge hint flags */
 #define AF_EDGE_NORMAL  0
@@ -229,6 +232,7 @@ FT_BEGIN_HEADER
 #define AF_EDGE_SERIF    ( 1U << 1 )
 #define AF_EDGE_DONE     ( 1U << 2 )
 #define AF_EDGE_NEUTRAL  ( 1U << 3 ) /* edge aligns to a neutral blue zone */
+#define AF_EDGE_NO_BLUE  ( 1U << 4 ) /* do not align edge to blue zone     */
 
 
   typedef struct AF_PointRec_*    AF_Point;

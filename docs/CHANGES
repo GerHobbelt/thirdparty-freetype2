@@ -1,12 +1,20 @@
-CHANGES BETWEEN 2.13.3 and 2.13.4 (2025-Mmm-DD)
+CHANGES BETWEEN 2.13.3 and 2.14.0 (2025-Mmm-DD)
 
   I. IMPORTANT CHANGES
 
-  - Bitmap-only TrueType fonts  now ignore FT_LOAD_NO_BITMAP flag  and
-    proceed loading bitmaps instead of giving an error.  This behavior
-    is documented  and  implemented  for other bitmap-only fonts.  The
-    flag  was always meant  to suppress the bitmap strikes in favor of
-    outlines, not to ban them completely.
+  - A new  configuration macro `FT_CONFIG_OPTION_USE_HARFBUZZ_DYNAMIC`
+    is available to load the HarfBuzz library dynamically (in addition
+    to the standard static and  dynamic linking modes); both meson and
+    autotools  support have  been updated  accordingly (but  not CMake
+    yet).   Using this  new feature  makes  it possible  to avoid  the
+    circular dependency between HarfBuzz and FreeType.
+
+    A  side effect  of this  change is  that FreeType  no longer  uses
+    HarfBuzz header files (if HarfBuzz support is activated).  To make
+    this  work,  we  now  require at  least  HarfBuzz  version  2.6.8,
+    released in June 2020.
+
+    This code was contributed by Behdad Esfahbod.
 
   - The auto-hinter got new abilities.
 
@@ -17,17 +25,32 @@ CHANGES BETWEEN 2.13.3 and 2.13.4 (2025-Mmm-DD)
     . Tilde accent  glyphs get vertically stretched at  small sizes so
       that they don't degenerate to horizontal lines.
 
-    Both  features use  a database,  which currently  has entries  for
-    Unicode characters lower than U+0180.  FreeType needs to access or
-    construct a proper Unicode character map from a given font to make
+    . Diacritics directly attached to a base glyph (like the ogonek in
+      character 'ę') no longer distort the shape of the base glyph.
+
+    These features  use a  database (which  currently has  entries for
+    Unicode characters up to U+FFFF,  based on Unicode 17.0), handling
+    scripts like  Latin, Cyrillic, or  Greek, but not Arabic  or Indic
+    scripts.  FreeType needs to access  a proper Unicode character map
+    (or must be able to construct such a cmap) of a given font to make
     this work.
 
     You need HarfBuzz 7.2.0 or newer for the new diacritic support.
 
-    This was Craig White's GSoC 2023 project.
+    The central algorithm and the foundation of this feature was Craig
+    White's GSoC 2023 project.
+
+  - Bitmap-only TrueType fonts  now ignore FT_LOAD_NO_BITMAP flag  and
+    proceed loading bitmaps instead of giving an error.  This behavior
+    is documented  and  implemented  for other bitmap-only fonts.  The
+    flag  was always meant  to suppress the bitmap strikes in favor of
+    outlines, not to ban them completely.
 
 
   III. MISCELLANEOUS
+
+  - The TrueType instruction interpreter  was optimized to produce 15%
+    gain in the glyph loading speed.
 
   - TrueType and CFF glyph loading speed has been improved by 5-10% on
     modern 64-bit platforms  as  a result of better handling of fixed-
@@ -387,6 +410,10 @@ CHANGES BETWEEN 2.10.4 and 2.11.0 (2021-Jul-18)
         Dereference  an  `FT_OpaquePaint`   object  and  retrieve  the
         corresponding `FT_COLR_Paint`  object, which  contains details
         on how to draw the respective 'COLR' v1 `Paint` table.
+
+    Please note that FreeType does *not* provide rendering support for
+    'COLR' v1 but  only parsing of  this table.  You need  a dedicated
+    graphics library like Skia or Cairo for rendering.
 
 
   II. MISCELLANEOUS

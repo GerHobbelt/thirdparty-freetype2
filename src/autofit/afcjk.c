@@ -92,12 +92,8 @@
 
       /* If HarfBuzz is not available, we need a pointer to a single */
       /* unsigned long value.                                        */
-#ifdef FT_CONFIG_OPTION_USE_HARFBUZZ
-      void*     shaper_buf;
-#else
       FT_ULong  shaper_buf_;
       void*     shaper_buf = &shaper_buf_;
-#endif
 
       const char*  p;
 
@@ -107,9 +103,8 @@
 
       p = script_class->standard_charstring;
 
-#ifdef FT_CONFIG_OPTION_USE_HARFBUZZ
-      shaper_buf = af_shaper_buf_create( face );
-#endif
+      if ( ft_hb_enabled( metrics->root.globals ) )
+        shaper_buf = af_shaper_buf_create( metrics->root.globals );
 
       /* We check a list of standard characters.  The first match wins. */
 
@@ -146,7 +141,7 @@
           break;
       }
 
-      af_shaper_buf_destroy( face, shaper_buf );
+      af_shaper_buf_destroy( metrics->root.globals, shaper_buf );
 
       if ( !glyph_index )
         goto Exit;
@@ -299,12 +294,8 @@
 
     /* If HarfBuzz is not available, we need a pointer to a single */
     /* unsigned long value.                                        */
-#ifdef FT_CONFIG_OPTION_USE_HARFBUZZ
-    void*     shaper_buf;
-#else
     FT_ULong  shaper_buf_;
     void*     shaper_buf = &shaper_buf_;
-#endif
 
 
     /* we walk over the blue character strings as specified in the   */
@@ -315,9 +306,8 @@
     FT_TRACE5(( "==========================\n" ));
     FT_TRACE5(( "\n" ));
 
-#ifdef FT_CONFIG_OPTION_USE_HARFBUZZ
-    shaper_buf = af_shaper_buf_create( face );
-#endif
+    if ( ft_hb_enabled( metrics->root.globals ) )
+      shaper_buf = af_shaper_buf_create( metrics->root.globals );
 
     for ( ; bs->string != AF_BLUE_STRING_MAX; bs++ )
     {
@@ -555,7 +545,7 @@
 
     } /* end for loop */
 
-    af_shaper_buf_destroy( face, shaper_buf );
+    af_shaper_buf_destroy( metrics->root.globals, shaper_buf );
 
     FT_TRACE5(( "\n" ));
 
@@ -574,23 +564,20 @@
 
     /* If HarfBuzz is not available, we need a pointer to a single */
     /* unsigned long value.                                        */
-#ifdef FT_CONFIG_OPTION_USE_HARFBUZZ
-    void*     shaper_buf;
-#else
     FT_ULong  shaper_buf_;
     void*     shaper_buf = &shaper_buf_;
-#endif
 
     /* in all supported charmaps, digits have character codes 0x30-0x39 */
     const char   digits[] = "0 1 2 3 4 5 6 7 8 9";
     const char*  p;
 
+    FT_UNUSED( face );
+
 
     p = digits;
 
-#ifdef FT_CONFIG_OPTION_USE_HARFBUZZ
-    shaper_buf = af_shaper_buf_create( face );
-#endif
+    if ( ft_hb_enabled( metrics->root.globals ) )
+      shaper_buf = af_shaper_buf_create( metrics->root.globals );
 
     while ( *p )
     {
@@ -626,7 +613,7 @@
       }
     }
 
-    af_shaper_buf_destroy( face, shaper_buf );
+    af_shaper_buf_destroy( metrics->root.globals, shaper_buf );
 
     metrics->root.digits_have_same_width = same_width;
   }
@@ -712,7 +699,7 @@
         FT_Pos  delta1, delta2;
 
 
-        blue->ref.fit  = FT_PIX_ROUND( blue->ref.cur );
+        blue->ref.fit = FT_PIX_ROUND( blue->ref.cur );
 
         /* shoot is under shoot for cjk */
         delta1 = FT_DivFix( blue->ref.fit, scale ) - blue->shoot.org;
@@ -2187,7 +2174,7 @@
   af_cjk_align_edge_points( AF_GlyphHints  hints,
                             AF_Dimension   dim )
   {
-    AF_AxisHints  axis       = & hints->axis[dim];
+    AF_AxisHints  axis       = &hints->axis[dim];
     AF_Edge       edges      = axis->edges;
     AF_Edge       edge_limit = FT_OFFSET( edges, axis->num_edges );
     AF_Edge       edge;
