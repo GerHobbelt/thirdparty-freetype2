@@ -5531,7 +5531,7 @@
     if ( exc->GS.gep0 == 0 )   /* If in twilight zone */
     {
       exc->zp0.org[point].x = TT_MulFix14( distance,
-                                             exc->GS.freeVector.x );
+                                           exc->GS.freeVector.x );
       exc->zp0.org[point].y = TT_MulFix14( distance,
                                            exc->GS.freeVector.y );
       exc->zp0.cur[point]   = exc->zp0.org[point];
@@ -5827,11 +5827,10 @@
 
   Fail:
     exc->GS.rp1 = exc->GS.rp0;
+    exc->GS.rp2 = point;
 
     if ( ( exc->opcode & 16 ) != 0 )
       exc->GS.rp0 = point;
-
-    exc->GS.rp2 = point;
   }
 
 
@@ -6505,8 +6504,8 @@
       break;
     }
 
-    /* check adjusted ppem range */
-    if ( P < 0 || P > 15 )
+    /* check applicable range of adjusted ppem */
+    if ( P & ~0xF )         /* P < 0 || P > 15 */
       return;
 
     P <<= 4;
@@ -6601,8 +6600,8 @@
       break;
     }
 
-    /* check adjusted ppem range */
-    if ( P < 0 || P > 15 )
+    /* check applicable range of adjusted ppem */
+    if ( P & ~0xF )         /* P < 0 || P > 15 */
       return;
 
     P <<= 4;
@@ -6953,7 +6952,6 @@
                 " to %ld\n", exc->neg_jump_counter_max ));
 
     /* set PPEM and CVT functions */
-    exc->tt_metrics.ratio = 0;
     if ( exc->metrics.x_ppem != exc->metrics.y_ppem )
     {
       /* non-square pixels, use the stretched routines */
