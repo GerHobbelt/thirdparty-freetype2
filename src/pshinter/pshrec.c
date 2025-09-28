@@ -468,7 +468,7 @@
       table->num_masks--;
     }
     else
-      FT_TRACE0(( "ps_mask_table_merge: ignoring invalid indices (%d,%d)\n",
+      FT_TRACE0(( "ps_mask_table_merge: ignoring invalid indices (%u,%u)\n",
                   index1, index2 ));
 
   Exit:
@@ -818,7 +818,7 @@
     /* limit "dimension" to 0..1 */
     if ( dimension > 1 )
     {
-      FT_TRACE0(( "ps_hints_stem: invalid dimension (%d) used\n",
+      FT_TRACE0(( "ps_hints_stem: invalid dimension (%u) used\n",
                   dimension ));
       dimension = ( dimension != 0 );
     }
@@ -871,7 +871,7 @@
       /* limit "dimension" to 0..1 */
       if ( dimension > 1 )
       {
-        FT_TRACE0(( "ps_hints_t1stem3: invalid dimension (%d) used\n",
+        FT_TRACE0(( "ps_hints_t1stem3: invalid dimension (%u) used\n",
                     dimension ));
         dimension = ( dimension != 0 );
       }
@@ -977,7 +977,7 @@
       if ( bit_count !=  count1 + count2 )
       {
         FT_TRACE0(( "ps_hints_t2mask:"
-                    " called with invalid bitcount %d (instead of %d)\n",
+                    " called with invalid bitcount %u (instead of %u)\n",
                    bit_count, count1 + count2 ));
 
         /* simply ignore the operator */
@@ -1023,7 +1023,7 @@
       if ( bit_count !=  count1 + count2 )
       {
         FT_TRACE0(( "ps_hints_t2counter:"
-                    " called with invalid bitcount %d (instead of %d)\n",
+                    " called with invalid bitcount %u (instead of %u)\n",
                    bit_count, count1 + count2 ));
 
         /* simply ignore the operator */

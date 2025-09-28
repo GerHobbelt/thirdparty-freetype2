@@ -70,7 +70,7 @@
 
     Count = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (Count = %d)\n", Count ));
+    OTV_TRACE(( " (Count = %u)\n", Count ));
 
     OTV_LIMIT_CHECK( Count * otvalid->extra1 * 2 );
 
@@ -253,7 +253,7 @@
     OTV_LIMIT_CHECK( 6 );
     AnchorFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", AnchorFormat ));
+    OTV_TRACE(( " (format %u)\n", AnchorFormat ));
 
     p += 4;     /* skip XCoordinate and YCoordinate */
 
@@ -319,7 +319,7 @@
     OTV_LIMIT_CHECK( 2 );
     MarkCount = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (MarkCount = %d)\n", MarkCount ));
+    OTV_TRACE(( " (MarkCount = %u)\n", MarkCount ));
 
     OTV_LIMIT_CHECK( MarkCount * 4 );
 
@@ -358,7 +358,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     otvalid->extra3 = table;
 
@@ -388,7 +388,7 @@
         ValueFormat = FT_NEXT_USHORT( p );
         ValueCount  = FT_NEXT_USHORT( p );
 
-        OTV_TRACE(( " (ValueCount = %d)\n", ValueCount ));
+        OTV_TRACE(( " (ValueCount = %u)\n", ValueCount ));
 
         len_value = otv_value_length( ValueFormat );
 
@@ -442,7 +442,7 @@
     OTV_LIMIT_CHECK( 2 );
     PairValueCount = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (PairValueCount = %d)\n", PairValueCount ));
+    OTV_TRACE(( " (PairValueCount = %u)\n", PairValueCount ));
 
     value_len1 = otv_value_length( format1 );
     value_len2 = otv_value_length( format2 );
@@ -482,7 +482,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {
@@ -497,7 +497,7 @@
         ValueFormat2 = FT_NEXT_USHORT( p );
         PairSetCount = FT_NEXT_USHORT( p );
 
-        OTV_TRACE(( " (PairSetCount = %d)\n", PairSetCount ));
+        OTV_TRACE(( " (PairSetCount = %u)\n", PairSetCount ));
 
         otv_Coverage_validate( table + Coverage, otvalid, -1 );
 
@@ -525,8 +525,8 @@
         ClassCount1  = FT_NEXT_USHORT( p );
         ClassCount2  = FT_NEXT_USHORT( p );
 
-        OTV_TRACE(( " (ClassCount1 = %d)\n", ClassCount1 ));
-        OTV_TRACE(( " (ClassCount2 = %d)\n", ClassCount2 ));
+        OTV_TRACE(( " (ClassCount1 = %u)\n", ClassCount1 ));
+        OTV_TRACE(( " (ClassCount2 = %u)\n", ClassCount2 ));
 
         len_value1 = otv_value_length( ValueFormat1 );
         len_value2 = otv_value_length( ValueFormat2 );
@@ -589,7 +589,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {
@@ -606,7 +606,7 @@
         Coverage       = FT_NEXT_USHORT( p );
         EntryExitCount = FT_NEXT_USHORT( p );
 
-        OTV_TRACE(( " (EntryExitCount = %d)\n", EntryExitCount ));
+        OTV_TRACE(( " (EntryExitCount = %u)\n", EntryExitCount ));
 
         otv_Coverage_validate( table + Coverage,
                                otvalid,
@@ -667,7 +667,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {
@@ -708,7 +708,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {
@@ -749,7 +749,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {
@@ -790,7 +790,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {
@@ -849,7 +849,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {
@@ -910,7 +910,7 @@
     OTV_LIMIT_CHECK( 2 );
     PosFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format %d)\n", PosFormat ));
+    OTV_TRACE(( " (format %u)\n", PosFormat ));
 
     switch ( PosFormat )
     {

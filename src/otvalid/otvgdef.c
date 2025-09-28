@@ -60,7 +60,7 @@
     Coverage   = table + FT_NEXT_USHORT( p );
     GlyphCount = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (GlyphCount = %d)\n", GlyphCount ));
+    OTV_TRACE(( " (GlyphCount = %u)\n", GlyphCount ));
 
     otv_Coverage_validate( Coverage, otvalid, (FT_Int)GlyphCount );
     if ( GlyphCount != otv_Coverage_get_count( Coverage ) )
@@ -105,7 +105,7 @@
 
     CaretValueFormat = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (format = %d)\n", CaretValueFormat ));
+    OTV_TRACE(( " (format = %u)\n", CaretValueFormat ));
 
     switch ( CaretValueFormat )
     {
@@ -157,7 +157,7 @@
     OTV_LIMIT_CHECK( 2 );
     MarkGlyphSetCount = FT_NEXT_USHORT( p );
 
-    OTV_TRACE(( " (MarkGlyphSetCount = %d)\n", MarkGlyphSetCount ));
+    OTV_TRACE(( " (MarkGlyphSetCount = %u)\n", MarkGlyphSetCount ));
 
     OTV_LIMIT_CHECK( MarkGlyphSetCount * 4 );      /* CoverageOffsets */
 

@@ -42,6 +42,7 @@
 
 #include <freetype/internal/fthash.h>
 #include <freetype/internal/ftmemory.h>
+#include <freetype/internal/ftobjs.h>
 
 
 #define INITIAL_HT_SIZE  241

@@ -461,6 +461,9 @@
       case '%':
         skip_comment( &cur, limit );
         break;
+
+      default:
+        break;
       }
     }
 
@@ -1146,7 +1149,7 @@
             FT_ERROR(( "ps_parser_load_field:"
                        " expected a name or string\n" ));
             FT_ERROR(( "                     "
-                       " but found token of type %d instead\n",
+                       " but found token of type %u instead\n",
                        token.type ));
             error = FT_THROW( Invalid_File_Format );
             goto Exit;
@@ -1226,7 +1229,7 @@
             if ( result < 0 || (FT_UInt)result < max_objects )
             {
               FT_ERROR(( "ps_parser_load_field:"
-                         " expected %d integer%s in the %s subarray\n",
+                         " expected %u integer%s in the %s subarray\n",
                          max_objects, max_objects > 1 ? "s" : "",
                          i == 0 ? "first"
                                 : ( i == 1 ? "second"

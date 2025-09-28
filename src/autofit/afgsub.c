@@ -16,10 +16,13 @@
  */
 
 #include <freetype/freetype.h>
+#include <freetype/tttables.h>
 #include <freetype/tttags.h>
 
 #include <freetype/internal/ftstream.h>
 
+#include "afglobal.h"
+#include "afgsub.h"
 #include "aftypes.h"
 
 
@@ -307,9 +310,7 @@
     FT_Byte*  limit;
 
 
-    globals->gsub_length = 0;
-    globals->gsub        = NULL;
-
+    globals->gsub                          = NULL;
     globals->gsub_lookups_single_alternate = NULL;
 
     /* No error if we can't load or parse GSUB data. */
@@ -361,9 +362,7 @@
       idx++;
     }
 
-    globals->gsub_length = gsub_length;
-    globals->gsub        = gsub;
-
+    globals->gsub                          = gsub;
     globals->gsub_lookups_single_alternate = gsub_lookups_single_alternate;
 
     return;
@@ -510,11 +509,14 @@
     else
     {
       /* Get number of substitutes, increased by one... */
-      FT_UInt  mask = ( *value & 0xFFFF0000 ) + 0x10000U;
+      FT_UInt  mask = ( (FT_UInt)*value & 0xFFFF0000U ) + 0x10000U;
 
 
       /* ... which becomes the new key mask. */
-      error = ft_hash_num_insert( glyph | mask, substitute, map, memory );
+      error = ft_hash_num_insert( (FT_Int)( glyph | mask ),
+                                  substitute,
+                                  map,
+                                  memory );
       if ( error )
         return error;
 
