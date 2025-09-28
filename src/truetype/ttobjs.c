@@ -874,28 +874,20 @@
    *   size ::
    *     A handle to the size object.
    *
-   *   pedantic ::
-   *     Set if bytecode execution should be pedantic.
-   *
    * @Return:
    *   FreeType error code.  0 means success.
    */
   FT_LOCAL_DEF( FT_Error )
-  tt_size_run_fpgm( TT_Size  size,
-                    FT_Bool  pedantic )
+  tt_size_run_fpgm( TT_Size  size )
   {
     TT_Face         face = (TT_Face)size->root.face;
-    TT_ExecContext  exec;
+    TT_ExecContext  exec = size->context;
     FT_Error        error;
 
-
-    exec = size->context;
 
     error = TT_Load_Context( exec, face, size );
     if ( error )
       return error;
-
-    exec->pedantic_hinting = pedantic;
 
     /* disable CVT and glyph programs coderange */
     TT_Clear_CodeRange( exec, tt_coderange_cvt );
@@ -941,18 +933,14 @@
    *   size ::
    *     A handle to the size object.
    *
-   *   pedantic ::
-   *     Set if bytecode execution should be pedantic.
-   *
    * @Return:
    *   FreeType error code.  0 means success.
    */
   FT_LOCAL_DEF( FT_Error )
-  tt_size_run_prep( TT_Size  size,
-                    FT_Bool  pedantic )
+  tt_size_run_prep( TT_Size  size )
   {
     TT_Face         face = (TT_Face)size->root.face;
-    TT_ExecContext  exec;
+    TT_ExecContext  exec = size->context;
     FT_Error        error;
     FT_UInt         i;
 
@@ -965,30 +953,26 @@
     FT_ARRAY_ZERO( size->twilight.org, size->twilight.n_points );
     FT_ARRAY_ZERO( size->twilight.cur, size->twilight.n_points );
 
-    /* clear storage area */
-    FT_ARRAY_ZERO( size->storage, size->storage_size );
-
-    /* Scale the cvt values to the new ppem.            */
-    /* By default, we use the y ppem value for scaling. */
-    FT_TRACE6(( "CVT values:\n" ));
-    for ( i = 0; i < size->cvt_size; i++ )
-    {
-      /* Unscaled CVT values are already stored in 26.6 format.            */
-      /* Note that this scaling operation is very sensitive to rounding;   */
-      /* the integer division by 64 must be applied to the first argument. */
-      size->cvt[i] = FT_MulFix( face->cvt[i] / 64, size->ttmetrics.scale );
-      FT_TRACE6(( "  %3d: %f (%f)\n",
-                  i, (double)face->cvt[i] / 64, (double)size->cvt[i] / 64 ));
-    }
-    FT_TRACE6(( "\n" ));
-
-    exec = size->context;
-
     error = TT_Load_Context( exec, face, size );
     if ( error )
       return error;
 
-    exec->pedantic_hinting = pedantic;
+    /* clear storage area */
+    FT_ARRAY_ZERO( exec->storage, exec->storeSize );
+
+    /* Scale the cvt values to the new ppem.            */
+    /* By default, we use the y ppem value for scaling. */
+    FT_TRACE6(( "CVT values:\n" ));
+    for ( i = 0; i < exec->cvtSize; i++ )
+    {
+      /* Unscaled CVT values are already stored in 26.6 format.            */
+      /* Note that this scaling operation is very sensitive to rounding;   */
+      /* the integer division by 64 must be applied to the first argument. */
+      exec->cvt[i] = FT_MulFix( face->cvt[i] / 64, size->ttmetrics.scale );
+      FT_TRACE6(( "  %3d: %f (%f)\n",
+                  i, (double)face->cvt[i] / 64, (double)exec->cvt[i] / 64 ));
+    }
+    FT_TRACE6(( "\n" ));
 
     TT_Clear_CodeRange( exec, tt_coderange_glyph );
 
@@ -1021,112 +1005,69 @@
 
 
   static void
-  tt_size_done_bytecode( FT_Size  ftsize )
+  tt_size_done_bytecode( TT_Size  size )
   {
-    TT_Size    size   = (TT_Size)ftsize;
-    TT_Face    face   = (TT_Face)ftsize->face;
-    FT_Memory  memory = face->root.memory;
+    FT_Memory       memory = size->root.face->memory;
+    TT_ExecContext  exec   = size->context;
 
-    if ( size->context )
+
+    if ( exec )
     {
-      TT_Done_Context( size->context );
+      FT_FREE( exec->stack );
+      FT_FREE( exec->FDefs );
+
+      TT_Done_Context( exec );
       size->context = NULL;
     }
 
-    FT_FREE( size->cvt );
-    size->cvt_size = 0;
-
-    /* free storage area */
-    FT_FREE( size->storage );
-    size->storage_size = 0;
-
     /* twilight zone */
     tt_glyphzone_done( memory, &size->twilight );
-
-    FT_FREE( size->function_defs );
-    FT_FREE( size->instruction_defs );
-
-    size->num_function_defs    = 0;
-    size->max_function_defs    = 0;
-    size->num_instruction_defs = 0;
-    size->max_instruction_defs = 0;
-
-    size->max_func = 0;
-    size->max_ins  = 0;
-
-    size->bytecode_ready = -1;
-    size->cvt_ready      = -1;
   }
 
 
   /* Initialize bytecode-related fields in the size object.       */
   /* We do this only if bytecode interpretation is really needed. */
-  static FT_Error
-  tt_size_init_bytecode( FT_Size  ftsize,
+  FT_LOCAL_DEF( FT_Error )
+  tt_size_init_bytecode( TT_Size  size,
                          FT_Bool  pedantic )
   {
     FT_Error   error;
-    TT_Size    size = (TT_Size)ftsize;
-    TT_Face    face = (TT_Face)ftsize->face;
-    FT_Memory  memory = face->root.memory;
+    TT_Face    face = (TT_Face)size->root.face;
+    FT_Memory  memory = size->root.face->memory;
 
     FT_UShort       n_twilight;
     TT_MaxProfile*  maxp = &face->max_profile;
+    TT_ExecContext  exec;
 
 
-    /* clean up bytecode related data */
-    FT_FREE( size->function_defs );
-    FT_FREE( size->instruction_defs );
-    FT_FREE( size->cvt );
-    FT_FREE( size->storage );
+    exec = TT_New_Context( (TT_Driver)face->root.driver );
+    if ( !exec )
+      return FT_THROW( Could_Not_Find_Context );
 
-    if ( size->context )
-      TT_Done_Context( size->context );
-    tt_glyphzone_done( memory, &size->twilight );
+    exec->pedantic_hinting = pedantic;
 
-    size->bytecode_ready = -1;
-    size->cvt_ready      = -1;
+    exec->maxFDefs = maxp->maxFunctionDefs;
+    exec->maxIDefs = maxp->maxInstructionDefs;
 
-    size->context = TT_New_Context( (TT_Driver)face->root.driver );
+    if ( FT_NEW_ARRAY( exec->FDefs, exec->maxFDefs + exec->maxIDefs ) )
+      goto Exit;
 
-    size->max_function_defs    = maxp->maxFunctionDefs;
-    size->max_instruction_defs = maxp->maxInstructionDefs;
+    exec->IDefs = exec->FDefs + exec->maxFDefs;
 
-    size->num_function_defs    = 0;
-    size->num_instruction_defs = 0;
+    exec->numFDefs = 0;
+    exec->numIDefs = 0;
 
-    size->max_func = 0;
-    size->max_ins  = 0;
+    exec->maxFunc = 0;
+    exec->maxIns  = 0;
 
-    size->cvt_size     = face->cvt_size;
-    size->storage_size = maxp->maxStorage;
+    /* XXX: We reserve a little more elements on the stack to deal */
+    /*      with broken fonts like arialbs, courbs, timesbs, etc.  */
+    exec->stackSize = maxp->maxStackElements + 32;
+    exec->storeSize = maxp->maxStorage;
+    exec->cvtSize   = face->cvt_size;
 
-    /* Set default metrics */
-    {
-      TT_Size_Metrics*  tt_metrics = &size->ttmetrics;
-
-
-      tt_metrics->rotated   = FALSE;
-      tt_metrics->stretched = FALSE;
-
-      /* Set default engine compensation.  Value 3 is not described */
-      /* in the OpenType specification (as of Mai 2019), but Greg   */
-      /* says that MS handles it the same as `gray'.                */
-      /*                                                            */
-      /* The Apple specification says that the compensation for     */
-      /* `gray' is always zero.  FreeType doesn't do any            */
-      /* compensation at all.                                       */
-      tt_metrics->compensations[0] = 0;   /* gray  */
-      tt_metrics->compensations[1] = 0;   /* black */
-      tt_metrics->compensations[2] = 0;   /* white */
-      tt_metrics->compensations[3] = 0;   /* zero  */
-    }
-
-    /* allocate function defs, instruction defs, cvt, and storage area */
-    if ( FT_NEW_ARRAY( size->function_defs,    size->max_function_defs    ) ||
-         FT_NEW_ARRAY( size->instruction_defs, size->max_instruction_defs ) ||
-         FT_NEW_ARRAY( size->cvt,              size->cvt_size             ) ||
-         FT_NEW_ARRAY( size->storage,          size->storage_size         ) )
+    if ( FT_NEW_ARRAY( exec->stack,
+                       exec->stackSize + exec->storeSize  + exec->cvtSize ) )
       goto Exit;
 
     /* reserve twilight zone and set GS before fpgm is executed, */
@@ -1140,7 +1081,24 @@
     if ( error )
       goto Exit;
 
-    size->GS = tt_default_graphics_state;
+    size->GS        = tt_default_graphics_state;
+    size->cvt_ready = -1;
+    size->context   = exec;
+
+    size->ttmetrics.rotated   = FALSE;
+    size->ttmetrics.stretched = FALSE;
+
+    /* Set default engine compensation.  Value 3 is not described */
+    /* in the OpenType specification (as of May 2019), but Greg   */
+    /* says that MS handles it the same as `gray'.                */
+    /*                                                            */
+    /* The Apple specification says that the compensation for     */
+    /* `gray' is always zero.  FreeType doesn't do any            */
+    /* compensation at all.                                       */
+    size->ttmetrics.compensations[0] = 0;   /* gray  */
+    size->ttmetrics.compensations[1] = 0;   /* black */
+    size->ttmetrics.compensations[2] = 0;   /* white */
+    size->ttmetrics.compensations[3] = 0;   /* zero  */
 
     /* Fine, now run the font program! */
 
@@ -1150,38 +1108,13 @@
     /* to be executed just once; calling it again is completely useless   */
     /* and might even lead to extremely slow behaviour if it is malformed */
     /* (containing an infinite loop, for example).                        */
-    error = tt_size_run_fpgm( size, pedantic );
+    error = tt_size_run_fpgm( size );
     return error;
 
   Exit:
     if ( error )
-      tt_size_done_bytecode( ftsize );
+      tt_size_done_bytecode( size );
 
-    return error;
-  }
-
-
-  FT_LOCAL_DEF( FT_Error )
-  tt_size_ready_bytecode( TT_Size  size,
-                          FT_Bool  pedantic )
-  {
-    FT_Error  error = FT_Err_Ok;
-
-
-    if ( size->bytecode_ready < 0 )
-      error = tt_size_init_bytecode( (FT_Size)size, pedantic );
-    else
-      error = size->bytecode_ready;
-
-    if ( error )
-      goto Exit;
-
-    if ( size->cvt_ready < 0 )
-      error = tt_size_run_prep( size, pedantic );
-    else
-      error = size->cvt_ready;
-
-  Exit:
     return error;
   }
 
@@ -1212,7 +1145,6 @@
 
 #ifdef TT_USE_BYTECODE_INTERPRETER
     size->bytecode_ready = -1;
-    size->cvt_ready      = -1;
 #endif
 
     size->ttmetrics.valid = FALSE;
@@ -1241,7 +1173,7 @@
 
 
 #ifdef TT_USE_BYTECODE_INTERPRETER
-    tt_size_done_bytecode( ttsize );
+    tt_size_done_bytecode( size );
 #endif
 
     size->ttmetrics.valid = FALSE;
