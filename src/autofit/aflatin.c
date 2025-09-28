@@ -3270,9 +3270,9 @@
           next_on = next_on->next;
 
         if ( next_on->y > p->y && prev_on->y > p->y )
-          measurement = p->y - min_y;
+          measurement = SUB_LONG( p->y, min_y );
         else if ( next_on->y < p->y && prev_on->y < p->y )
-          measurement = max_y - p->y;
+          measurement = SUB_LONG( max_y, p->y );
         else
           continue;
 
@@ -3314,7 +3314,8 @@
       /* We adjust the height of the diacritic only, which means    */
       /* we are never dealing with large numbers and can thus avoid */
       /* `FT_MulFix`.                                               */
-      p->y  = ( ( p->y - min_y ) * target_height / height ) + min_y;
+      p->y  = ADD_LONG( SUB_LONG( p->y, min_y ) * target_height / height,
+                        min_y );
 
     } while ( p != first_point );
 
@@ -3371,9 +3372,9 @@
           next_on = next_on->next;
 
         if ( next_on->y > p->y && prev_on->y > p->y )
-          measurement = p->y - min_y;
+          measurement = SUB_LONG( p->y, min_y );
         else if ( next_on->y < p->y && prev_on->y < p->y )
-          measurement = max_y - p->y;
+          measurement = SUB_LONG( max_y, p->y );
         else
           continue;
 
@@ -3405,7 +3406,8 @@
     do
     {
       p     = p->next;
-      p->y  = ( ( p->y - max_y ) * target_height / height ) + max_y;
+      p->y  = ADD_LONG( SUB_LONG( p->y, max_y ) * target_height / height,
+                        max_y );
 
     } while ( p != first_point );
 
@@ -3464,8 +3466,8 @@
 
     /* Align bottom of the tilde to the grid. */
     min_y_rounded = FT_PIX_ROUND( min_y );
-    delta         = min_y_rounded - min_y;
-    height        = max_y - min_y;
+    delta         = SUB_LONG( min_y_rounded, min_y );
+    height        = SUB_LONG( max_y, min_y );
 
     /* If the tilde is less than 3 pixels tall, snap the center of it */
     /* to the grid instead of the bottom to improve readability.      */
@@ -3504,8 +3506,8 @@
     } while ( p != first_point );
 
     max_y_rounded = FT_PIX_ROUND( max_y );
-    delta         = max_y_rounded - max_y;
-    height        = max_y - min_y;
+    delta         = SUB_LONG( max_y_rounded, max_y );
+    height        = SUB_LONG( max_y, min_y );
 
     if ( height < 64 * 3 )
       delta -= ( FT_PIX_ROUND( height ) - height ) / 2;
@@ -3674,7 +3676,7 @@
 
       high_min_y  = hints->contour_y_minima[high_contour];
       high_max_y  = hints->contour_y_maxima[high_contour];
-      high_height = high_max_y - high_min_y;
+      high_height = SUB_LONG( high_max_y, high_min_y );
 
       if ( high_height > accent_height_limit )
       {
@@ -3706,7 +3708,7 @@
         /* We also check that the y minimum of the 'other' contour */
         /* is below the high contour to avoid potential false hits */
         /* with contours enclosed in the high one.                 */
-        distance = high_min_y - max_y;
+        distance = SUB_LONG( high_min_y, max_y );
         if ( distance < 64           &&
              distance < min_distance &&
              min_y < high_min_y      )
@@ -3725,14 +3727,14 @@
 
         tilde_min_y  = hints->contour_y_minima[tilde_contour];
         tilde_max_y  = hints->contour_y_maxima[tilde_contour];
-        tilde_height = tilde_max_y - tilde_min_y;
+        tilde_height = SUB_LONG( tilde_max_y, tilde_min_y);
 
         /* The vertical separation adjustment potentially undoes a */
         /* tilde center alignment.  If it would grid-align a tilde */
         /* less than 3 pixels in height, shift additionally to     */
         /* re-center the tilde.                                    */
 
-        pos = high_min_y + adjustment_amount;
+        pos = ADD_LONG( high_min_y, adjustment_amount );
         if ( adjust_below_top && is_top_tilde )
           pos += high_height;
 
@@ -3765,7 +3767,7 @@
       {
         /* Value 8 is heuristic. */
         FT_Pos  height_delta = high_height / 8;
-        FT_Pos  min_y_limit  = high_min_y - height_delta;
+        FT_Pos  min_y_limit  = SUB_LONG( high_min_y, height_delta );
 
 
         FT_TRACE4(( "    Pushing high contour %ld units up\n",
@@ -3785,7 +3787,7 @@
                       centering_adjustment ));
 
           af_move_contours_up( hints,
-                               min_y_limit + high_height,
+                               ADD_LONG( min_y_limit, high_height ),
                                centering_adjustment );
         }
       }
@@ -3839,7 +3841,7 @@
 
       low_min_y  = hints->contour_y_minima[low_contour];
       low_max_y  = hints->contour_y_maxima[low_contour];
-      low_height = low_max_y - low_min_y;
+      low_height = SUB_LONG( low_max_y, low_min_y );
 
       if ( low_height > accent_height_limit )
       {
@@ -3864,7 +3866,7 @@
         min_y = hints->contour_y_minima[contour];
         max_y = hints->contour_y_maxima[contour];
 
-        distance = min_y - low_max_y;
+        distance = SUB_LONG( min_y, low_max_y );
         if ( distance < 64           &&
              distance < min_distance &&
              max_y > low_max_y       )
@@ -3883,9 +3885,9 @@
 
         tilde_min_y  = hints->contour_y_minima[tilde_contour];
         tilde_max_y  = hints->contour_y_maxima[tilde_contour];
-        tilde_height = tilde_max_y - tilde_min_y;
+        tilde_height = SUB_LONG( tilde_max_y, tilde_min_y );
 
-        pos = low_max_y - adjustment_amount;
+        pos = SUB_LONG( low_max_y, adjustment_amount );
         if ( adjust_above_bottom && is_bottom_tilde )
           pos -= low_height;
 
@@ -3916,7 +3918,7 @@
            ( calculated_amount <= 66 || adjustment_amount <= 66 ) )
       {
         FT_Pos  height_delta = low_height / 8;
-        FT_Pos  max_y_limit  = low_max_y + height_delta;
+        FT_Pos  max_y_limit  = ADD_LONG( low_max_y, height_delta );
 
 
         FT_TRACE4(( "    Pushing low contour %ld units down\n",
@@ -3930,7 +3932,7 @@
                       centering_adjustment ));
 
           af_move_contours_down( hints,
-                                 max_y_limit - low_height,
+                                 SUB_LONG( max_y_limit, low_height ),
                                  centering_adjustment );
         }
       }
