@@ -5404,7 +5404,7 @@
             FT_Long*        args )
   {
     FT_UShort   point = 0;
-    FT_F26Dot6  org_dist, distance;
+    FT_F26Dot6  org_dist, distance, compensation;
 
 
     point = (FT_UShort)args[0];
@@ -5473,14 +5473,12 @@
 
     /* round flag */
 
+    compensation = exc->GS.compensation[exc->opcode & 3];
+
     if ( ( exc->opcode & 4 ) != 0 )
-    {
-      distance = exc->func_round( exc, org_dist,
-                                  exc->GS.compensation[exc->opcode & 3] );
-    }
+      distance = exc->func_round( exc, org_dist, compensation );
     else
-      distance = Round_None( exc, org_dist,
-                             exc->GS.compensation[exc->opcode & 3] );
+      distance = Round_None( exc, org_dist, compensation );
 
     /* minimum distance flag */
 
@@ -5532,7 +5530,8 @@
     FT_F26Dot6  cvt_dist,
                 distance,
                 cur_dist,
-                org_dist;
+                org_dist,
+                compensation;
 
     FT_F26Dot6  delta;
 
@@ -5598,6 +5597,8 @@
 
     /* control value cut-in and round */
 
+    compensation = exc->GS.compensation[exc->opcode & 3];
+
     if ( ( exc->opcode & 4 ) != 0 )
     {
       /* XXX: UNDOCUMENTED!  Only perform cut-in test when both points */
@@ -5628,12 +5629,10 @@
           cvt_dist = org_dist;
       }
 
-      distance = exc->func_round( exc, cvt_dist,
-                                  exc->GS.compensation[exc->opcode & 3] );
+      distance = exc->func_round( exc, cvt_dist, compensation );
     }
     else
-      distance = Round_None( exc, cvt_dist,
-                             exc->GS.compensation[exc->opcode & 3] );
+      distance = Round_None( exc, cvt_dist, compensation );
 
     /* minimum distance test */
 
