@@ -1,4 +1,4 @@
-CHANGES BETWEEN 2.13.3 and 2.14.0 (2025-Mmm-DD)
+CHANGES BETWEEN 2.13.3 and 2.14.0 (2025-Sep-06)
 
   I. IMPORTANT CHANGES
 
@@ -5819,7 +5819,7 @@ Extensions support:
 
 ------------------------------------------------------------------------
 
-Copyright (C) 2000-2024 by
+Copyright (C) 2000-2025 by
 David Turner, Robert Wilhelm, and Werner Lemberg.
 
 This  file  is  part  of the  FreeType  project, and may  only be  used,

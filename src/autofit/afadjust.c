@@ -4,7 +4,7 @@
  *
  *   Auto-fitter routines to adjust components based on charcode (body).
  *
- * Copyright (C) 2023-2024 by
+ * Copyright (C) 2023-2025 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * Written by Craig White <gerzytet@gmail.com>.
@@ -1356,6 +1356,7 @@
 
 #ifdef FT_CONFIG_OPTION_USE_HARFBUZZ
 
+    if ( ft_hb_enabled( globals ) )
     {
       hb_font_t  *hb_font;
       hb_face_t  *hb_face;
