@@ -96,12 +96,20 @@
   /* default values of our `scan_type' and `scan_control' fields (which */
   /* the documentation's `scan_control' variable is split into) are     */
   /* zero.                                                              */
+  /*                                                                    */
+  /* The rounding compensation should logically belong here but poorly  */
+  /* described in the OpenType specs.  It was probably important in the */
+  /* days of dot matrix printers.  The values are referenced by color   */
+  /* as Gray, Black, and White in order. The Apple specification says   */
+  /* that the Gray compensation is always zero.  The fourth value is    */
+  /* not described at all, but Greg says that it is the same as Gray.   */
+  /* FreeType sets all compensation values to zero.                     */
 
   const TT_GraphicsState  tt_default_graphics_state =
   {
     0, 0, 0,  1, 1, 1,
     { 0x4000, 0 }, { 0x4000, 0 }, { 0x4000, 0 },
-    1, 1,
+    1, 1, { 0, 0, 0, 0 },
 
     64, 68, 0, 0, 9, 3,
     TRUE, 0, FALSE, 0
@@ -1668,8 +1676,8 @@
    *   distance ::
    *     The distance (not) to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   The compensated distance.
@@ -1677,10 +1685,10 @@
   static FT_F26Dot6
   Round_None( TT_ExecContext  exc,
               FT_F26Dot6      distance,
-              FT_Int          color )
+              FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
+    FT_UNUSED( exc );
 
 
     if ( distance >= 0 )
@@ -1711,8 +1719,8 @@
    *   distance ::
    *     The distance to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   Rounded distance.
@@ -1720,10 +1728,10 @@
   static FT_F26Dot6
   Round_To_Grid( TT_ExecContext  exc,
                  FT_F26Dot6      distance,
-                 FT_Int          color )
+                 FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
+    FT_UNUSED( exc );
 
 
     if ( distance >= 0 )
@@ -1756,8 +1764,8 @@
    *   distance ::
    *     The distance to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   Rounded distance.
@@ -1765,10 +1773,10 @@
   static FT_F26Dot6
   Round_To_Half_Grid( TT_ExecContext  exc,
                       FT_F26Dot6      distance,
-                      FT_Int          color )
+                      FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
+    FT_UNUSED( exc );
 
 
     if ( distance >= 0 )
@@ -1803,8 +1811,8 @@
    *   distance ::
    *     The distance to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   Rounded distance.
@@ -1812,10 +1820,10 @@
   static FT_F26Dot6
   Round_Down_To_Grid( TT_ExecContext  exc,
                       FT_F26Dot6      distance,
-                      FT_Int          color )
+                      FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
+    FT_UNUSED( exc );
 
 
     if ( distance >= 0 )
@@ -1847,8 +1855,8 @@
    *   distance ::
    *     The distance to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   Rounded distance.
@@ -1856,10 +1864,10 @@
   static FT_F26Dot6
   Round_Up_To_Grid( TT_ExecContext  exc,
                     FT_F26Dot6      distance,
-                    FT_Int          color )
+                    FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
+    FT_UNUSED( exc );
 
 
     if ( distance >= 0 )
@@ -1892,8 +1900,8 @@
    *   distance ::
    *     The distance to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   Rounded distance.
@@ -1901,10 +1909,10 @@
   static FT_F26Dot6
   Round_To_Double_Grid( TT_ExecContext  exc,
                         FT_F26Dot6      distance,
-                        FT_Int          color )
+                        FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
+    FT_UNUSED( exc );
 
 
     if ( distance >= 0 )
@@ -1937,8 +1945,8 @@
    *   distance ::
    *     The distance to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   Rounded distance.
@@ -1952,9 +1960,8 @@
   static FT_F26Dot6
   Round_Super( TT_ExecContext  exc,
                FT_F26Dot6      distance,
-               FT_Int          color )
+               FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
 
 
@@ -1993,8 +2000,8 @@
    *   distance ::
    *     The distance to round.
    *
-   *   color ::
-   *     The engine compensation color.
+   *   compensation ::
+   *     The engine compensation.
    *
    * @Return:
    *   Rounded distance.
@@ -2006,9 +2013,8 @@
   static FT_F26Dot6
   Round_Super_45( TT_ExecContext  exc,
                   FT_F26Dot6      distance,
-                  FT_Int          color )
+                  FT_F26Dot6      compensation )
   {
-    FT_F26Dot6  compensation = exc->tt_metrics.compensations[color];
     FT_F26Dot6  val;
 
 
@@ -2562,7 +2568,7 @@
   Ins_ODD( TT_ExecContext  exc,
            FT_Long*        args )
   {
-    args[0] = ( ( exc->func_round( exc, args[0], 3 ) & 127 ) == 64 );
+    args[0] = ( ( exc->func_round( exc, args[0], 0 ) & 64 ) == 64 );
   }
 
 
@@ -2576,7 +2582,7 @@
   Ins_EVEN( TT_ExecContext  exc,
             FT_Long*        args )
   {
-    args[0] = ( ( exc->func_round( exc, args[0], 3 ) & 127 ) == 0 );
+    args[0] = ( ( exc->func_round( exc, args[0], 0 ) & 64 ) == 0 );
   }
 
 
@@ -2906,7 +2912,8 @@
   Ins_ROUND( TT_ExecContext  exc,
              FT_Long*        args )
   {
-    args[0] = exc->func_round( exc, args[0], exc->opcode & 3 );
+    args[0] = exc->func_round( exc, args[0],
+                               exc->GS.compensation[exc->opcode & 3] );
   }
 
 
@@ -2920,7 +2927,8 @@
   Ins_NROUND( TT_ExecContext  exc,
               FT_Long*        args )
   {
-    args[0] = Round_None( exc, args[0], exc->opcode & 3 );
+    args[0] = Round_None( exc, args[0],
+                          exc->GS.compensation[exc->opcode & 3] );
   }
 
 
@@ -5289,7 +5297,7 @@
     if ( ( exc->opcode & 1 ) != 0 )
     {
       cur_dist = FAST_PROJECT( &exc->zp0.cur[point] );
-      distance = SUB_LONG( exc->func_round( exc, cur_dist, 3 ), cur_dist );
+      distance = SUB_LONG( exc->func_round( exc, cur_dist, 0 ), cur_dist );
     }
     else
       distance = 0;
@@ -5374,7 +5382,7 @@
       if ( delta > control_value_cutin )
         distance = org_dist;
 
-      distance = exc->func_round( exc, distance, 3 );
+      distance = exc->func_round( exc, distance, 0 );
     }
 
     exc->func_move( exc, &exc->zp0, point, SUB_LONG( distance, org_dist ) );
@@ -5467,10 +5475,12 @@
 
     if ( ( exc->opcode & 4 ) != 0 )
     {
-      distance = exc->func_round( exc, org_dist, exc->opcode & 3 );
+      distance = exc->func_round( exc, org_dist,
+                                  exc->GS.compensation[exc->opcode & 3] );
     }
     else
-      distance = Round_None( exc, org_dist, exc->opcode & 3 );
+      distance = Round_None( exc, org_dist,
+                             exc->GS.compensation[exc->opcode & 3] );
 
     /* minimum distance flag */
 
@@ -5618,10 +5628,12 @@
           cvt_dist = org_dist;
       }
 
-      distance = exc->func_round( exc, cvt_dist, exc->opcode & 3 );
+      distance = exc->func_round( exc, cvt_dist,
+                                  exc->GS.compensation[exc->opcode & 3] );
     }
     else
-      distance = Round_None( exc, cvt_dist, exc->opcode & 3 );
+      distance = Round_None( exc, cvt_dist,
+                             exc->GS.compensation[exc->opcode & 3] );
 
     /* minimum distance test */
 
