@@ -1182,8 +1182,6 @@
   {
     FT_Error     error;
     FT_Outline*  outline = &loader->gloader->base.outline;
-    FT_Stream    stream = loader->stream;
-    FT_UShort    n_ins;
     FT_UInt      i;
 
 
@@ -1202,8 +1200,10 @@
 #ifdef TT_USE_BYTECODE_INTERPRETER
 
     {
-      TT_ExecContext  exec = loader->exec;
+      TT_ExecContext  exec   = loader->exec;
       FT_Memory       memory = exec->memory;
+      FT_Stream       stream = loader->stream;
+      FT_UShort       n_ins;
 
 
       if ( exec->glyphSize )
@@ -1925,6 +1925,9 @@
       face->forget_glyph_frame( loader );
 
 #ifdef FT_CONFIG_OPTION_INCREMENTAL
+
+    /* restore the original stream */
+    loader->stream = face->root.stream;
 
     if ( glyph_data_loaded )
       face->root.internal->incremental_interface->funcs->free_glyph_data(
