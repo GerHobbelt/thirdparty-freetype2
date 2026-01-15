@@ -1300,7 +1300,8 @@
       PSH_Point  point, before, after;
 
 
-      if ( glyph->contours[n].count == 0 )
+      /* we need at least 3 points to create an extremum */
+      if ( glyph->contours[n].count < 3 )
         continue;
 
       point  = first;
@@ -1310,7 +1311,7 @@
       {
         before = before->prev;
         if ( before == first )
-          goto Skip;
+          goto Next;
 
       } while ( before->org_u == point->org_u );
 
