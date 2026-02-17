@@ -3310,12 +3310,14 @@
     p = first_point;
     do
     {
-      p     = p->next;
-      /* We adjust the height of the diacritic only, which means    */
-      /* we are never dealing with large numbers and can thus avoid */
-      /* `FT_MulFix`.                                               */
-      p->y  = ADD_LONG( SUB_LONG( p->y, min_y ) * target_height / height,
-                        min_y );
+      p    = p->next;
+      /* We adjust the height of the diacritic only, which means */
+      /* we are never dealing with (valid) large numbers and can */
+      /* thus avoid `FT_MulFix`.                                 */
+      p->y = ADD_LONG( MUL_LONG( SUB_LONG( p->y,
+                                           min_y ),
+                                 target_height ) / height,
+                       min_y );
 
     } while ( p != first_point );
 
@@ -3405,9 +3407,11 @@
     p = first_point;
     do
     {
-      p     = p->next;
-      p->y  = ADD_LONG( SUB_LONG( p->y, max_y ) * target_height / height,
-                        max_y );
+      p    = p->next;
+      p->y = ADD_LONG( MUL_LONG( SUB_LONG( p->y,
+                                           max_y ),
+                                 target_height ) / height,
+                       max_y );
 
     } while ( p != first_point );
 
@@ -3465,7 +3469,7 @@
     } while ( p != first_point );
 
     /* Align bottom of the tilde to the grid. */
-    min_y_rounded = FT_PIX_ROUND( min_y );
+    min_y_rounded = FT_PIX_ROUND_LONG( min_y );
     delta         = SUB_LONG( min_y_rounded, min_y );
     height        = SUB_LONG( max_y, min_y );
 
@@ -3505,7 +3509,7 @@
 
     } while ( p != first_point );
 
-    max_y_rounded = FT_PIX_ROUND( max_y );
+    max_y_rounded = FT_PIX_ROUND_LONG( max_y );
     delta         = SUB_LONG( max_y_rounded, max_y );
     height        = SUB_LONG( max_y, min_y );
 

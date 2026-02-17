@@ -1044,6 +1044,8 @@
     if ( !exec )
       return FT_THROW( Could_Not_Find_Context );
 
+    size->context = exec;
+
     exec->pedantic_hinting = pedantic;
 
     exec->maxFDefs = maxp->maxFunctionDefs;
@@ -1084,7 +1086,6 @@
 
     size->GS        = tt_default_graphics_state;
     size->cvt_ready = -1;
-    size->context   = exec;
 
     size->ttmetrics.rotated   = FALSE;
     size->ttmetrics.stretched = FALSE;
@@ -1101,7 +1102,6 @@
     return error;
 
   Fail:
-    TT_Done_Context( exec );
     tt_size_done_bytecode( size );
     return error;
   }

@@ -495,12 +495,6 @@
     else
       y_shift += 64 * (FT_Int)bitmap->rows;
 
-    if ( origin )
-    {
-      x_shift += origin->x;
-      y_shift += origin->y;
-    }
-
     /* translate outline to render it into the bitmap */
     if ( x_shift || y_shift )
       FT_Outline_Translate( outline, x_shift, y_shift );
