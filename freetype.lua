@@ -17,6 +17,7 @@ includedirs {
 }
 
 files {
+  "src/autofit/afadjust.c",
   "src/autofit/afblue.c",
   "src/autofit/afcjk.c",
   "src/autofit/afdummy.c",
@@ -28,6 +29,7 @@ files {
   "src/autofit/afmodule.c",
   "src/autofit/afranges.c",
   "src/autofit/afshaper.c",
+  "src/autofit/ft-hb.c",
 
   "src/base/ftadvanc.c",
   "src/base/ftbitmap.c",
