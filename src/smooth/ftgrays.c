@@ -492,11 +492,8 @@ typedef ptrdiff_t  FT_PtrDist;
 
   typedef struct  gray_TWorker_
   {
-    FT_BBox     cbox;
-
-    TCoord  min_ex, max_ex;  /* min and max integer pixel coordinates */
-    TCoord  min_ey, max_ey;
-    TCoord  count_ey;        /* same as (max_ey - min_ey) */
+    TCoord  min_ex, min_ey;  /* min and max integer pixel coordinates */
+    TCoord  max_ex, max_ey;
 
     int         error;       /* pool overflow exception                  */
     PCell       buffer;      /* buffer                                   */
@@ -589,14 +586,11 @@ typedef ptrdiff_t  FT_PtrDist;
     /* Note that if a cell is to the left of the clipping region, it is    */
     /* actually set to the (min_ex-1) horizontal position.                 */
 
-    TCoord  ey_index = ey - ras.min_ey;
-
-
-    if ( ey_index < 0 || ey_index >= ras.count_ey || ex >= ras.max_ex )
+    if ( ey < ras.min_ey || ey >= ras.max_ey || ex >= ras.max_ex )
       ras.cell = ras.cell_null;
     else
     {
-      PCell*  pcell = ras.ycells + ey_index;
+      PCell*  pcell = ras.ycells + ( ey - ras.min_ey );
       PCell   cell;
 
 
@@ -1812,7 +1806,7 @@ typedef ptrdiff_t  FT_PtrDist;
           FT_FILL_RULE( coverage, cover, fill );
 
           span[n].coverage = (unsigned char)coverage;
-          span[n].x        = (unsigned short)x;
+          span[n].x        = (short)x;
           span[n].len      = (unsigned short)( cell->x - x );
 
           if ( ++n == FT_MAX_GRAY_SPANS )
@@ -1831,7 +1825,7 @@ typedef ptrdiff_t  FT_PtrDist;
           FT_FILL_RULE( coverage, area, fill );
 
           span[n].coverage = (unsigned char)coverage;
-          span[n].x        = (unsigned short)cell->x;
+          span[n].x        = (short)cell->x;
           span[n].len      = 1;
 
           if ( ++n == FT_MAX_GRAY_SPANS )
@@ -1885,24 +1879,17 @@ typedef ptrdiff_t  FT_PtrDist;
     /* set up vertical bands */
     ras.ycells = (PCell*)ras.buffer;
 
-    ras.min_ex = ras.cbox.xMin;
-    ras.min_ey = ras.cbox.yMin;
-    ras.max_ex = ras.cbox.xMax;
-    ras.max_ey = ras.cbox.yMax;
-
-    do
+    while ( 1 )
     {
       size_t  n;
-      TCoord  i;
+      TCoord  i, count = ras.max_ey - ras.min_ey;
 
-
-      ras.count_ey = ras.max_ey - ras.min_ey;
 
       /* memory management: zero out and skip ycells */
-      for ( i = 0; i < ras.count_ey; ++i )
+      for ( i = 0; i < count; ++i )
         ras.ycells[i] = ras.cell_null;
 
-      n = ( (size_t)ras.count_ey * sizeof ( PCell ) + sizeof ( TCell ) - 1 )
+      n = ( (size_t)count * sizeof ( PCell ) + sizeof ( TCell ) - 1 )
             / sizeof ( TCell );
 
       ras.cell_free = ras.buffer + n;
@@ -1929,19 +1916,20 @@ typedef ptrdiff_t  FT_PtrDist;
       else if ( error != Smooth_Err_Raster_Overflow )
         goto Exit;
 
+      /* render pool overflow, reduce the render band by half */
+      count >>= 1;
+
       /* this happens only if the rendering pool is too small */
-      if ( ras.count_ey == 1 )
+      if ( count == 0 )
       {
         FT_TRACE7(( "gray_convert_glyph: rotten glyph\n" ));
         error = FT_THROW( Raster_Overflow );
         goto Exit;
       }
 
-      /* render pool overflow; we will reduce the render band by half */
       *band++     = ras.min_ey;
-      ras.min_ey += ras.count_ey >> 1;
-
-    } while ( 1 );
+      ras.min_ey += count;
+    }
 
   Exit:
     return error;
@@ -1994,7 +1982,10 @@ typedef ptrdiff_t  FT_PtrDist;
       ras.render_span      = (FT_Raster_Span_Func)params->gray_spans;
       ras.render_span_data = params->user;
 
-      ras.cbox = params->clip_box;
+      ras.min_ex = (TCoord)params->clip_box.xMin;
+      ras.min_ey = (TCoord)params->clip_box.yMin;
+      ras.max_ex = (TCoord)params->clip_box.xMax;
+      ras.max_ey = (TCoord)params->clip_box.yMax;
     }
     else
     {
@@ -2020,19 +2011,18 @@ typedef ptrdiff_t  FT_PtrDist;
       ras.render_span      = (FT_Raster_Span_Func)NULL;
       ras.render_span_data = NULL;
 
-      ras.cbox.xMin = 0;
-      ras.cbox.yMin = 0;
-      ras.cbox.xMax = (FT_Pos)target_map->width;
-      ras.cbox.yMax = (FT_Pos)target_map->rows;
+      ras.min_ex = 0;
+      ras.min_ey = 0;
+      ras.max_ex = (TCoord)target_map->width;
+      ras.max_ey = (TCoord)target_map->rows;
     }
 
     /* exit if nothing to do */
-    if ( ras.cbox.xMin >= ras.cbox.xMax || ras.cbox.yMin >= ras.cbox.yMax )
+    if ( ras.min_ex >= ras.max_ex || ras.min_ey >= ras.max_ey )
       return Smooth_Err_Ok;
 
     /* allocate memory based on empirical estimate from CJK fonts */
-    estimate = ( ras.cbox.xMax - ras.cbox.xMin +
-                 ras.cbox.yMax - ras.cbox.yMin ) * 10UL;
+    estimate = ( ras.max_ex - ras.min_ey + ras.max_ey - ras.min_ey ) * 10UL;
     if ( estimate > FT_MAX_GRAY_POOL )
     {
       FT_Error   error;
