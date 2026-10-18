@@ -820,7 +820,7 @@
                                             (FT_UInt32)(*p)[3]         );
 
 
-              component->axis_values[i++] = (FT_Fixed)( val * 4 );
+              component->axis_values[i++] = (FT_Fixed)MUL_INT32( val, 4 );
               *p += 4;
             }
           }
@@ -1070,9 +1070,10 @@
     if ( !coords || coord_count == 0 )
       return scalar;  /* no coords available, return 1.0 */
 
-    /* `SparseVarRegionList` region format:
+    /* `SparseVariationRegion` table:
      *
      *   regionAxisCount (u16) - number of non-default axes
+     *   axisOffsets (u32[regionAxisCount]) - relative to this region
      *   for each sparse axis:
      *     axisIndex (u16)
      *     startCoord (F2DOT14)
@@ -1080,12 +1081,15 @@
      *     endCoord (F2DOT14)
      */
 
-    if ( p + 2 > limit )
+    if ( limit - p < 2 )
       return 0;
 
     /* read sparse axis count (u16) */
     axis_count = ( (FT_UInt)p[0] << 8 ) | p[1];
     p += 2;
+
+    if ( axis_count > (FT_ULong)( limit - p ) / 4 )
+      return 0;
 
     /* process each axis range */
     for ( i = 0; i < axis_count; i++ )
@@ -1094,32 +1098,38 @@
       FT_Short   min_val, peak_val, max_val;
       FT_Fixed   coord;
       FT_Fixed   axis_scalar;
+      FT_UInt32  axis_offset;
+      FT_Byte*   axis;
 
       FT_Fixed  min_16;
       FT_Fixed  peak_16;
       FT_Fixed  max_16;
 
 
-      /* read axis index (u16) */
-      if ( p + 8 > limit )
+      axis_offset = ( (FT_UInt32)p[0] << 24 ) |
+                    ( (FT_UInt32)p[1] << 16 ) |
+                    ( (FT_UInt32)p[2] << 8  ) |
+                      (FT_UInt32)p[3];
+      p += 4;
+
+      if ( axis_offset > (FT_ULong)( limit - region_data )     ||
+           (FT_ULong)( limit - region_data ) - axis_offset < 8 )
         return 0;
 
-      axis_index = ( (FT_UInt16)p[0] << 8 ) | p[1];
-      p += 2;
+      axis       = region_data + axis_offset;
+      axis_index = ( (FT_UInt16)axis[0] << 8 ) | axis[1];
+      axis      += 2;
 
       /* read min, peak, max (F2DOT14) - each is 2 bytes, */
       /* advance after each read                          */
-      min_val  = (FT_Short)( ( (FT_UShort)p[0] << 8 ) |
-                               (FT_UShort)p[1]        );
-      p += 2;
-      /* fixed: read from p[0] after advancing */
-      peak_val = (FT_Short)( ( (FT_UShort)p[0] << 8 ) |
-                               (FT_UShort)p[1]        );
-      p += 2;
-      /* fixed: read from p[0] after advancing */
-      max_val  = (FT_Short)( ( (FT_UShort)p[0] << 8 ) |
-                               (FT_UShort)p[1]        );
-      p += 2;
+      min_val  = (FT_Short)( ( (FT_UShort)axis[0] << 8 ) |
+                               (FT_UShort)axis[1]        );
+      axis += 2;
+      peak_val = (FT_Short)( ( (FT_UShort)axis[0] << 8 ) |
+                               (FT_UShort)axis[1]        );
+      axis += 2;
+      max_val  = (FT_Short)( ( (FT_UShort)axis[0] << 8 ) |
+                               (FT_UShort)axis[1]        );
 
       /* get coordinate for this axis */
       if ( axis_index >= coord_count )
@@ -1343,6 +1353,10 @@
    *   num_coords ::
    *     Number of coords in `current_coords`.
    *
+   *   condition_defaults ::
+   *     Optional defaults for condition values.  If non-NULL, return each
+   *     unrounded value's positive sign (0 or 1), instead of scaled deltas.
+   *
    * @Output:
    *   deltas ::
    *     Array to store the deltas (must have space for `num_deltas`).
@@ -1359,7 +1373,8 @@
                            FT_Long*   deltas,
                            FT_UInt    shift,
                            FT_Fixed*  current_coords,
-                           FT_UInt    num_coords )
+                           FT_UInt    num_coords,
+                           FT_Short*  condition_defaults )
   {
 #ifdef TT_CONFIG_OPTION_GX_VAR_SUPPORT
 
@@ -1380,15 +1395,18 @@
     FT_Byte    mvd_format;
     FT_UInt16  region_count;
     FT_Byte*   delta_sets;
+    FT_UInt32  delta_sets_offset;
     FT_Byte*   tuple_data;
     FT_UInt    tuple_size;
 
     FT_Int64   stack_accumulators[VARC_STACK_DELTA_COUNT];
     /* deltas * regions */
     FT_Int32   stack_all_deltas[VARC_STACK_DELTA_COUNT * 16];
-    FT_Int64*  accumulators   = NULL;
-    FT_Byte*   regions_data   = NULL;
-    FT_Byte*   regions_limit  = NULL;
+    FT_Int64*  accumulators      = NULL;
+    FT_Byte*   regions_data      = NULL;
+    FT_Byte*   regions_limit     = NULL;
+    FT_UInt32  region_list_count = 0;
+
     FT_UInt    total_deltas;
     FT_Int32*  all_deltas     = NULL;
     FT_UInt    bytes_consumed = 0;
@@ -1402,7 +1420,8 @@
     {
       /* no variation store - return zeros */
       for ( i = 0; i < num_deltas; i++ )
-        deltas[i] = 0;
+        deltas[i] = condition_defaults ? FT_BOOL( condition_defaults[i] > 0 )
+                                       : 0;
       return FT_Err_Ok;
     }
 
@@ -1433,8 +1452,6 @@
                        (FT_UInt32)p[3];
     p += 4;
 
-    FT_UNUSED( regions_offset );  /* TODO: Use for region evaluation */
-
     /* read dataSets count (u16) */
     data_sets_count = ( (FT_UInt16)p[0] << 8 ) | p[1];
     p += 2;
@@ -1461,7 +1478,7 @@
 
     mvd_data = mvs_data + data_set_offset;
 
-    if ( mvd_data + 3 > table_limit )
+    if ( table_limit - mvd_data < 7 )
       return FT_THROW( Invalid_Table );
 
     /* parse `MultiVarData` header */
@@ -1476,14 +1493,23 @@
     /* read `regionIndices` count (u16) */
     region_count = ( (FT_UInt16)p[0] << 8 ) | p[1];
     p += 2;
-    /* skip `regionIndices` array */
+
+    if ( region_count > (FT_ULong)( table_limit - p ) / 2 )
+      return FT_THROW( Invalid_Table );
     p += region_count * 2;
 
-    if ( p > table_limit )
+    if ( table_limit - p < 4 )
       return FT_THROW( Invalid_Table );
 
-    /* Now `p` points to `deltaSets` (INDEX2) */
-    delta_sets = p;
+    delta_sets_offset = ( (FT_UInt32)p[0] << 24 ) |
+                        ( (FT_UInt32)p[1] << 16 ) |
+                        ( (FT_UInt32)p[2] << 8  ) |
+                          (FT_UInt32)p[3];
+    if ( !delta_sets_offset                                           ||
+         delta_sets_offset > (FT_ULong)( table_limit - mvd_data )     ||
+         (FT_ULong)( table_limit - mvd_data ) - delta_sets_offset < 4 )
+      return FT_THROW( Invalid_Table );
+    delta_sets = mvd_data + delta_sets_offset;
 
     /* read tuple from INDEX2 at inner index */
     error = tt_varc_read_cff2_index_entry( delta_sets, table_limit, inner,
@@ -1504,20 +1530,50 @@
     }
 
     /* initialize accumulators to zero */
-    for ( i = 0; i < num_deltas; i++ )
-      accumulators[i] = FT_INT64_ZERO;
+    FT_ARRAY_ZERO( accumulators, num_deltas );
+    if ( condition_defaults )
+    {
+      for ( i = 0; i < num_deltas; i++ )
+      {
+#ifdef FT_INT64
+        accumulators[i] = (FT_Int64)condition_defaults[i] * 0x10000L;
+#else
+        accumulators[i].lo = (FT_UInt32)(FT_Int32)condition_defaults[i] << 16;
+        accumulators[i].hi = condition_defaults[i] < 0 ? 0xFFFFFFFFU : 0;
+#endif
+      }
+    }
 
     /* parse `SparseVarRegionList` to get region definitions */
-    if ( regions_offset > 0 && regions_offset < varc->table_size )
+    if ( regions_offset > 0                                     &&
+         regions_offset <= (FT_ULong)( table_limit - mvs_data ) )
     {
       regions_data  = mvs_data + regions_offset;
       regions_limit = table_limit;
 
-      /* read and skip region count (u16) */
-      if ( regions_data + 2 <= regions_limit )
-        regions_data += 2;
+      /* read region count (u32) */
+      if ( regions_limit - regions_data >= 4 )
+      {
+        region_list_count = ( (FT_UInt32)regions_data[0] << 24 ) |
+                            ( (FT_UInt32)regions_data[1] << 16 ) |
+                            ( (FT_UInt32)regions_data[2] << 8  ) |
+                              (FT_UInt32)regions_data[3];
+        regions_data += 4;
+
+        if ( region_list_count >
+               (FT_ULong)( regions_limit - regions_data ) / 4 )
+          regions_data = NULL;
+      }
       else
         regions_data = NULL;
+    }
+
+    if ( !regions_data )
+    {
+      if ( accumulators != stack_accumulators )
+        FT_FREE( accumulators );
+      error = FT_THROW( Invalid_Table );
+      goto Cleanup;
     }
 
     /* read ALL deltas from the flat tuple */
@@ -1587,23 +1643,27 @@
       {
         /* SparseVarRegionList format:
          *
-         *   u16: regionCount
+         *   u32: regionCount
          *   u32[regionCount]: array of offsets (from start of list)
          *                     to each region
          */
 
         /* back to start (before count) */
-        FT_Byte*  region_list_start = regions_data - 2;
-        FT_Byte*  region_offset_ptr = regions_data + region_index * 4;
+        FT_Byte*  region_list_start = regions_data - 4;
+        FT_Byte*  region_offset_ptr;
 
 
-        if ( region_offset_ptr + 4 <= regions_limit )
+        if ( region_index < region_list_count                              &&
+             region_index < (FT_ULong)( regions_limit - regions_data ) / 4 )
         {
-          FT_UInt32 region_offset =
-                      ( (FT_UInt32)region_offset_ptr[0] << 24 ) |
-                      ( (FT_UInt32)region_offset_ptr[1] << 16 ) |
-                      ( (FT_UInt32)region_offset_ptr[2] << 8  ) |
-                        (FT_UInt32)region_offset_ptr[3];
+          FT_UInt32  region_offset;
+
+
+          region_offset_ptr = regions_data + region_index * 4;
+          region_offset = ( (FT_UInt32)region_offset_ptr[0] << 24 ) |
+                          ( (FT_UInt32)region_offset_ptr[1] << 16 ) |
+                          ( (FT_UInt32)region_offset_ptr[2] << 8  ) |
+                            (FT_UInt32)region_offset_ptr[3];
 
 
           if ( region_offset <
@@ -1647,7 +1707,7 @@
           accumulators[k] += product;
 #else /* !FT_INT64 */
           /* 32-bit fallback */
-          if ( (FT_UInt32)( region_delta + 0x8000 ) <= 0x20000 )
+          if ( (FT_UInt32)region_delta + 0x8000U <= 0xFFFFU )
           {
             /* fast path - multiplication fits in 32 bits */
             FT_Int32  product = region_delta * region_scalar;
@@ -1655,17 +1715,15 @@
 
             accumulators[k].lo += (FT_UInt32)product;
             if ( accumulators[k].lo < (FT_UInt32)product )
-              accumulators[k].hi += ( product < 0 ) ? 0 : 1;
+              accumulators[k].hi += 1;
             if ( product < 0 )
               accumulators[k].hi -= 1;
           }
           else
           {
             /* slow path - full 64-bit signed multiplication */
-            FT_UInt32 a = ( region_delta < 0 ) ? -(FT_UInt32)region_delta
-                                               : region_delta;
-            FT_UInt32 b = ( region_scalar < 0 ) ? -(FT_UInt32)region_scalar
-                                                : region_scalar;
+            FT_UInt32  a = (FT_UInt32)ULABS( region_delta );
+            FT_UInt32  b = (FT_UInt32)ULABS( region_scalar );
 
             FT_UInt32  a_lo = a & 0xFFFF;
             FT_UInt32  a_hi = a >> 16;
@@ -1714,13 +1772,22 @@
       for ( i = 0; i < num_deltas; i++ )
       {
 #ifdef FT_INT64
-        deltas[i] =
-          (FT_Long)( ( accumulators[i] + rounding ) >> right_shift );
+        if ( condition_defaults )
+          deltas[i] = FT_BOOL( accumulators[i] > 0 );
+        else
+          deltas[i] =
+            (FT_Long)( ( accumulators[i] + rounding ) >> right_shift );
 #else
         /* 32-bit fallback */
         FT_UInt32  hi = accumulators[i].hi;
         FT_UInt32  lo = accumulators[i].lo;
 
+
+        if ( condition_defaults )
+        {
+          deltas[i] = FT_BOOL( !( hi & 0x80000000U ) && ( hi || lo ) );
+          continue;
+        }
 
         /* add rounding */
         lo += (FT_UInt32)rounding;
@@ -1728,11 +1795,11 @@
           hi += 1;
 
         /* shift right by (16 - shift) bits */
-        if ( right_shift >= 16 )
-          deltas[i] = (FT_Long)hi;
+        if ( right_shift == 0 )
+          deltas[i] = (FT_Long)(FT_Int32)lo;
         else
-          deltas[i] = (FT_Long)( ( hi << ( 16 + shift ) ) |
-                                 ( lo >> right_shift )    );
+          deltas[i] = (FT_Long)(FT_Int32)( ( hi << ( 16 + shift ) ) |
+                                           ( lo >> right_shift )    );
 #endif
       }
     }
@@ -1756,6 +1823,7 @@
     FT_UNUSED( shift );
     FT_UNUSED( current_coords );
     FT_UNUSED( num_coords );
+    FT_UNUSED( condition_defaults );
 
     return FT_THROW( Unimplemented_Feature );
 
@@ -1880,6 +1948,11 @@
     FT_UInt  format;
 
 
+    /* A zero condition offset represents True.  Top-level zero offsets */
+    /* resolve to the start of the ConditionList.                       */
+    if ( cond == varc->condition_list )
+      return TRUE;
+
     if ( !cond                             ||
          depth > TT_VARC_MAX_NESTING_LEVEL ||
          cond + 2 > table_limit            )
@@ -1918,7 +1991,7 @@
       {
         FT_Short   default_value;
         FT_UInt32  var_idx;
-        FT_Long    delta = 0;
+        FT_Long    positive;
 
 
         if ( cond + 8 > table_limit )
@@ -1932,14 +2005,16 @@
                   ( (FT_UInt32)cond[6] << 8  ) |
                     (FT_UInt32)cond[7];
 
-        /* A variable value: default plus the interpolated (integer)      */
-        /* delta from the `MultiItemVariationStore`.  shift=0 returns the */
-        /* delta as a plain integer.                                      */
+        /* Compare the unrounded default plus interpolated delta. */
+        /* Even a small positive fraction makes a condition true. */
+        positive = FT_BOOL( default_value > 0 );
         if ( var_idx != 0xFFFFFFFFUL )
-          (void)tt_varc_get_item_deltas( face, varc, var_idx, 1, &delta, 0,
-                                         coords, num_coords );
+          (void)tt_varc_get_item_deltas( face, varc, var_idx, 1,
+                                         &positive, 0,
+                                         coords, num_coords,
+                                         &default_value );
 
-        return FT_BOOL( (FT_Long)default_value + delta > 0 );
+        return FT_BOOL( positive );
       }
 
     case 3:  /* ConditionAnd */
@@ -1968,11 +2043,12 @@
 
 
           p += 3;
-          r = tt_varc_eval_condition( face, varc,
-                                      cond + sub_off,
-                                      table_limit,
-                                      coords, num_coords,
-                                      depth + 1 );
+          r = sub_off == 0 ? TRUE
+                           : tt_varc_eval_condition( face, varc,
+                                                     cond + sub_off,
+                                                     table_limit,
+                                                     coords, num_coords,
+                                                     depth + 1 );
 
           if ( is_and && !r )
             return FALSE;
@@ -1994,6 +2070,9 @@
         sub_off = ( (FT_UInt32)cond[2] << 16 ) |
                   ( (FT_UInt32)cond[3] << 8  ) |
                     (FT_UInt32)cond[4];
+
+        if ( sub_off == 0 )
+          return FALSE;
 
         return FT_BOOL( !tt_varc_eval_condition( face, varc, cond + sub_off,
                                                  table_limit, coords,
@@ -2202,7 +2281,7 @@
                                      component->num_axis_values,
                                      deltas, 2,
                                      current_coords,
-                                     num_coords );
+                                     num_coords, NULL );
     if ( !error )
     {
       for ( i = 0; i < component->num_axis_values; i++ )
@@ -2307,7 +2386,7 @@
                                      num_deltas,
                                      deltas, 4,
                                      current_coords,
-                                     num_coords );
+                                     num_coords, NULL );
     if ( !error )
     {
       /* Apply deltas to transform components in order.             */
@@ -3381,7 +3460,7 @@
               if ( v >= 0 )
                 v = ( v + 2 ) & ~(FT_Fixed)3;
               else
-                v = -( ( -v + 2 ) & ~(FT_Fixed)3 );
+                v = NEG_LONG( ( NEG_LONG( v ) + 2 ) & ~(FT_Fixed)3 );
 
               new_coords[axis_idx] = v;
               FT_TRACE7(( "    axis %u: %.5f\n",
@@ -3502,12 +3581,19 @@
 
             /* Convert from 26.6 font units to 26.6 device pixels. */
             /* 26.6 * 16.16 = 42.22; >> 22 gives 26.6.             */
+#ifdef FT_INT64
             internal->transform_delta.x =
               (FT_Pos)( ( (FT_Int64)composed_delta.x * x_scale +
                           0x200000L ) >> 22 );
             internal->transform_delta.y =
               (FT_Pos)( ( (FT_Int64)composed_delta.y * y_scale +
                           0x200000L ) >> 22 );
+#else
+            internal->transform_delta.x =
+              FT_MulDiv( composed_delta.x, x_scale, 0x400000L );
+            internal->transform_delta.y =
+              FT_MulDiv( composed_delta.y, y_scale, 0x400000L );
+#endif
           }
           else
           {

@@ -292,6 +292,9 @@
         priv_len += size;
       }
 
+      parser->private_dict = priv_dict;
+      parser->private_len  = priv_len;
+
       /* Check that we have a private dictionary there */
       if ( priv_len == 0 )
       {
@@ -301,8 +304,8 @@
         goto Fail;
       }
 
-      parser->private_dict = priv_dict;
-      parser->private_len  = priv_len;
+      /* discard any errors from truncated files */
+      error = FT_Err_Ok;
     }
     else
     {
