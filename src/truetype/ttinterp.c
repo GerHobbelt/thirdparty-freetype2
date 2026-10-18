@@ -273,7 +273,7 @@
    *
    *   Note that not all members of `TT_ExecContext` get initialized.
    */
-  FT_LOCAL_DEF( FT_Error )
+  FT_LOCAL_DEF( void )
   TT_Load_Context( TT_ExecContext  exec,
                    TT_Face         face,
                    TT_Size         size )
@@ -285,7 +285,7 @@
     exec->size = size;
 
     /* CVT and storage are not persistent in FreeType */
-    /* reset them after they might have been modifief */
+    /* reset them after they might have been modified */
     exec->storage = exec->stack   + exec->stackSize;
     exec->cvt     = exec->storage + exec->storeSize;
 
@@ -298,8 +298,6 @@
     exec->metrics    = *size->metrics;
 
     exec->twilight   = size->twilight;
-
-    return FT_Err_Ok;
   }
 
 

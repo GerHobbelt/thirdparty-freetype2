@@ -45,6 +45,7 @@
 #define CFF_fixedToInt( x )                          \
           ( (FT_Short)( ( (x) + 0x8000U ) >> 16 ) )
 
+
   /**************************************************************************
    *
    * The macro FT_COMPONENT is used in trace mode.  It is an implicit

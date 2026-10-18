@@ -547,7 +547,7 @@
      *
      */
 
-    if ( High )
+    if ( High && ras.bTop + ras.bRight < 256 )
     {
       ras.precision_bits   = 12;
       ras.precision_step   = 256;
@@ -1352,17 +1352,9 @@
         /* this arc has no given direction, split it! */
         Split_Conic( arc );
         arc += 2;
+        continue;
       }
-      else if ( y1 == y3 )
-      {
-        /* this arc is flat, advance position */
-        /* and pop it from the Bezier stack   */
-        arc -= 2;
-
-        ras.lastX = x3;
-        ras.lastY = y3;
-      }
-      else
+      else if ( y1 != y3 )
       {
         /* the arc is y-monotonous, either ascending or descending */
         /* detect a change of direction                            */
@@ -1390,13 +1382,16 @@
           if ( Bezier_Down( RAS_VARS 2, arc, Split_Conic,
                                      ras.minY, ras.maxY ) )
             goto Fail;
-        arc -= 2;
-
-        ras.lastX = x3;
-        ras.lastY = y3;
       }
 
-    } while ( arc >= arcs );
+      ras.lastX = x3;
+      ras.lastY = y3;
+
+      if ( arc == arcs )
+        break;
+      arc -= 2;
+
+    } while ( 1 );
 
     return SUCCESS;
 
@@ -1499,17 +1494,9 @@
         /* this arc has no given direction, split it! */
         Split_Cubic( arc );
         arc += 3;
+        continue;
       }
-      else if ( y1 == y4 )
-      {
-        /* this arc is flat, advance position */
-        /* and pop it from the Bezier stack   */
-        arc -= 3;
-
-        ras.lastX = x4;
-        ras.lastY = y4;
-      }
-      else
+      else if ( y1 != y4 )
       {
         state_bez = y1 < y4 ? Ascending_State : Descending_State;
 
@@ -1536,13 +1523,16 @@
           if ( Bezier_Down( RAS_VARS 3, arc, Split_Cubic,
                                      ras.minY, ras.maxY ) )
             goto Fail;
-        arc -= 3;
-
-        ras.lastX = x4;
-        ras.lastY = y4;
       }
 
-    } while ( arc >= arcs );
+      ras.lastX = x4;
+      ras.lastY = y4;
+
+      if ( arc == arcs )
+        break;
+      arc -= 3;
+
+    } while ( 1 );
 
     return SUCCESS;
 
