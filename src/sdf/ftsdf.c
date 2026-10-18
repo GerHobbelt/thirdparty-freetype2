@@ -656,12 +656,6 @@
     FT_Memory  memory = shape->memory;
 
 
-    if ( !to || !user )
-    {
-      error = FT_THROW( Invalid_Argument );
-      goto Exit;
-    }
-
     FT_CALL( sdf_contour_new( memory, &contour ) );
 
     contour->last_pos = *to;
@@ -680,21 +674,14 @@
   sdf_line_to( const FT_26D6_Vec*  to,
                void*               user )
   {
-    SDF_Shape*    shape    = ( SDF_Shape* )user;
-    SDF_Edge*     edge     = NULL;
-    SDF_Contour*  contour  = NULL;
+    SDF_Shape*    shape   = ( SDF_Shape* )user;
+    SDF_Edge*     edge    = NULL;
+    SDF_Contour*  contour = shape->contours;
 
-    FT_Error      error    = FT_Err_Ok;
-    FT_Memory     memory   = shape->memory;
+    FT_Error   error  = FT_Err_Ok;
+    FT_Memory  memory = shape->memory;
 
 
-    if ( !to || !user )
-    {
-      error = FT_THROW( Invalid_Argument );
-      goto Exit;
-    }
-
-    contour = shape->contours;
 
     if ( contour->last_pos.x == to->x &&
          contour->last_pos.y == to->y )
@@ -723,21 +710,13 @@
                 const FT_26D6_Vec*  to,
                 void*               user )
   {
-    SDF_Shape*    shape    = ( SDF_Shape* )user;
-    SDF_Edge*     edge     = NULL;
-    SDF_Contour*  contour  = NULL;
+    SDF_Shape*    shape   = ( SDF_Shape* )user;
+    SDF_Edge*     edge    = NULL;
+    SDF_Contour*  contour = shape->contours;
 
     FT_Error   error  = FT_Err_Ok;
     FT_Memory  memory = shape->memory;
 
-
-    if ( !control_1 || !to || !user )
-    {
-      error = FT_THROW( Invalid_Argument );
-      goto Exit;
-    }
-
-    contour = shape->contours;
 
     /* If the control point coincides with any of the end points */
     /* then it is a line and should be treated as one to avoid   */
@@ -779,19 +758,11 @@
   {
     SDF_Shape*    shape   = ( SDF_Shape* )user;
     SDF_Edge*     edge    = NULL;
-    SDF_Contour*  contour = NULL;
+    SDF_Contour*  contour = shape->contours;
 
     FT_Error   error  = FT_Err_Ok;
     FT_Memory  memory = shape->memory;
 
-
-    if ( !control_2 || !control_1 || !to || !user )
-    {
-      error = FT_THROW( Invalid_Argument );
-      goto Exit;
-    }
-
-    contour = shape->contours;
 
     FT_CALL( sdf_edge_new( memory, &edge ) );
 
