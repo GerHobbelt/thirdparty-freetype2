@@ -793,7 +793,7 @@
 
     internal->transform_flags = 0;
 
-    if ( !matrix )
+    if ( !matrix || !FT_Matrix_Check( matrix ) )
     {
       internal->transform_matrix.xx = 0x10000L;
       internal->transform_matrix.xy = 0;

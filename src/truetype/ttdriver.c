@@ -609,6 +609,7 @@
   FT_DEFINE_SERVICE_VARCREC(
     tt_service_varc,
 
+    tt_face_init_varc_axes,
     tt_face_load_varc,
     tt_face_free_varc,
     tt_face_has_varc_glyph,
