@@ -1750,7 +1750,6 @@
     FT_UInt  x, y;
     FT_Byte  b, g, r, alpha;
 
-    FT_ULong  size;
     FT_Byte*  src;
     FT_Byte*  dst;
 
@@ -1768,13 +1767,9 @@
       dstSlot->bitmap.pitch      = (int)dstSlot->bitmap.width * 4;
       dstSlot->bitmap.num_grays  = 256;
 
-      size = dstSlot->bitmap.rows * (unsigned int)dstSlot->bitmap.pitch;
-
-      error = ft_glyphslot_alloc_bitmap( dstSlot, size );
+      error = ft_glyphslot_alloc_bitmap( dstSlot );
       if ( error )
         return error;
-
-      FT_MEM_ZERO( dstSlot->bitmap.buffer, size );
     }
     else
     {
