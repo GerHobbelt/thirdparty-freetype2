@@ -1623,15 +1623,14 @@
 
     tag = FT_CURVE_TAG( tags[0] );
 
-    /* A contour cannot start with a cubic control point! */
-    if ( tag == FT_CURVE_TAG_CUBIC )
-      goto Invalid_Outline;
-
     /* check first point to determine origin */
-    if ( tag == FT_CURVE_TAG_CONIC )
+    if ( tag != FT_CURVE_TAG_ON )
     {
-      /* first point is conic control.  Yes, this happens. */
-      if ( FT_CURVE_TAG( ras.outline.tags[last] ) == FT_CURVE_TAG_ON )
+      UInt  last_tag = FT_CURVE_TAG( ras.outline.tags[last] );
+
+
+      /* first point is a control point.  Yes, this happens. */
+      if ( last_tag == FT_CURVE_TAG_ON )
       {
         /* start at last point if it is on the curve */
         v_start = v_last;
@@ -1639,9 +1638,12 @@
       }
       else
       {
-        /* if both first and last points are conic,         */
-        /* start at their middle and record its position    */
-        /* for closure                                      */
+        if ( last_tag != tag )
+          goto Invalid_Outline;
+
+        /* if both first and last points are controls,   */
+        /* start at their middle and record its position */
+        /* for closure                                   */
         v_start.x = ( v_start.x + v_last.x ) / 2;
         v_start.y = ( v_start.y + v_last.y ) / 2;
 
@@ -1756,14 +1758,30 @@
 
           if ( point <= limit )
           {
+            tag = FT_CURVE_TAG( tags[0] );
+
             x3 = SCALED( point[0].x );
             y3 = SCALED( point[0].y );
 
             if ( flipped )
               SWAP_( x3, y3 );
 
+            if ( tag == FT_CURVE_TAG_CUBIC )
+            {
+              x3 = ( x2 + x3 ) / 2;
+              y3 = ( y2 + y3 ) / 2;
+            }
+            else if ( tag != FT_CURVE_TAG_ON )
+              goto Invalid_Outline;
+
             if ( Cubic_To( RAS_VARS x1, y1, x2, y2, x3, y3 ) )
               goto Fail;
+
+            if ( tag == FT_CURVE_TAG_CUBIC )
+            {
+              point--;
+              tags--;
+            }
             continue;
           }
 
